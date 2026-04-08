@@ -1,0 +1,750 @@
+================================================================================
+  PETWELL FRONTEND — DOCUMENTO DE CONTEXTO PARA IA
+  Generado: 2026-03-13 | Estado: Activo
+================================================================================
+
+────────────────────────────────────────
+  1. DESCRIPCIÓN DEL PROYECTO
+────────────────────────────────────────
+Nombre:       PetWell
+Tipo:         Frontend web (Next.js / React)
+Stack:        Next.js 15 (App Router) + TypeScript + TailwindCSS v4
+Backend:      Microservicios conectados vía API Gateway (REST/JSON)
+Estado:       En desarrollo activo
+
+PetWell es una plataforma de salud veterinaria que conecta dueños de mascotas,
+clínicas veterinarias y veterinarios en un ecosistema digital unificado.
+
+────────────────────────────────────────
+  2. ESTRUCTURA DE CARPETAS
+────────────────────────────────────────
+petwell-frontend/
+├── app/                          # Rutas Next.js (App Router)
+│   ├── page.tsx                  # Landing page / Home
+│   ├── layout.tsx                # Layout raíz (Navbar + Footer)
+│   ├── globals.css               # Sistema de diseño y tokens CSS
+│   ├── login/page.tsx            # Inicio de sesión
+│   ├── register/page.tsx         # Registro (dueño de mascota o clínica)
+│   ├── dashboard/page.tsx        # Panel del usuario autenticado
+│   ├── change-password/page.tsx  # Cambio de contraseña
+│   ├── forgot-password/page.tsx  # Recuperar contraseña
+│   └── clinic-dashboard/
+│       ├── layout.tsx            # Layout protegido por RoleGuard (CLINIC_ADMIN)
+│       ├── page.tsx              # Panel de la clínica
+│       ├── add-veterinarian/
+│       │   └── page.tsx          # Formulario para agregar veterinario
+│       └── add-receptionist/
+│           └── page.tsx          # Formulario para agregar recepcionista
+│
+├── components/
+│   ├── auth/
+│   │   └── RoleGuard.tsx         # Guardia de rutas basada en roles
+│   ├── layout/
+│   │   ├── Navbar.tsx            # Barra de navegación principal
+│   │   └── Footer.tsx            # Pie de página
+│   └── ui/
+│       ├── Input.tsx             # Campo de entrada reutilizable
+│       ├── Button.tsx            # Botón reutilizable (4 variantes)
+│       ├── Alert.tsx             # Alertas de éxito/error
+│       └── LoadingSpinner.tsx    # Spinner de carga
+│
+├── context/
+│   └── AuthContext.tsx           # Contexto de autenticación global
+│
+├── hooks/
+│   └── useAuth.ts                # Hook de acceso al AuthContext
+│
+├── services/
+│   ├── api.ts                    # Servicio base original (backward-compat)
+│   ├── authService.ts            # Login + registro de dueño
+│   ├── clinicService.ts          # Registro + veterinarios + getClinic + getClinicStaff
+│   └── userService.ts            # Perfil + cambio de contraseña
+│
+├── types/
+│   └── index.ts                  # Tipos TypeScript globales
+│
+└── utils/
+    └── auth.ts                   # Helpers de token JWT (localStorage)
+
+────────────────────────────────────────
+  3. ENDPOINTS API IMPLEMENTADOS
+────────────────────────────────────────
+Base URL: NEXT_PUBLIC_API_URL (default: http://localhost:3001/api/v1)
+
+  Autenticación / Usuarios:
+  ─────────────────────────
+  POST   /users/register          → Registrar dueño de mascota
+  POST   /users/login             → Iniciar sesión (devuelve JWT)
+  GET    /users/profile           → Obtener perfil (requiere JWT)
+  POST   /users/change-password   → Cambiar contraseña (requiere JWT)
+  POST   /users/veterinarians     → Agregar veterinario (requiere JWT clínica)
+  POST   /users/receptionists     → Agregar recepcionista (requiere JWT clínica)
+
+  Clínicas:
+  ─────────
+  POST   /clinics/register        → Registrar clínica veterinaria
+  GET    /clinics/:id             → Obtener detalle de clínica (requiere JWT)
+  GET    /clinics/:id/staff       → Obtener personal de clínica (requiere JWT)
+
+────────────────────────────────────────
+  4. TIPOS TYPESCRIPT PRINCIPALES
+────────────────────────────────────────
+  UserRole              → 'ADMIN' | 'CLINIC_ADMIN' | 'VETERINARIO' | 'RECEPCIONISTA' | 'DUENO_MASCOTA'
+  User                  → Usuario autenticado (id, name, email, role: UserRole, etc.)
+  AccountType           → 'owner' | 'clinic'
+  RegisterRequest       → Datos para registro de dueño
+  LoginRequest          → Datos para login
+  AuthResponse          → Respuesta de auth (token + user)
+  ClinicRegisterRequest → Datos para registro de clínica
+  Clinic                → Entidad clínica
+  ClinicResponse        → Respuesta de registro de clínica
+  ClinicDetail          → Detalle completo de clínica (GET /clinics/:id)
+  ClinicDetailResponse  → Respuesta de getClinic
+  StaffMember           → Miembro del personal de clínica (role: 'VETERINARIO' | 'RECEPCIONISTA')
+  StaffListResponse     → Respuesta de getClinicStaff
+  VeterinarianRequest   → Datos para agregar veterinario
+  ReceptionistRequest   → Datos para agregar recepcionista
+  ProfileResponse       → Respuesta del perfil
+  ChangePasswordRequest → Datos para cambio de contraseña
+  FormState             → Estado de formulario (loading, error, success)
+  BaseResponse          → Respuesta genérica (success, message)
+
+────────────────────────────────────────
+  5. SISTEMA DE DISEÑO
+────────────────────────────────────────
+Colores de marca (definidos en globals.css @theme):
+  --color-petwell-navy:  #1e3a5f   (azul oscuro, texto principal)
+  --color-petwell-blue:  #2e86c1   (azul medio, botón primario)
+  --color-petwell-teal:  #48c9a9   (verde agua, botón secundario/acento)
+  --color-petwell-light: #e8f4fd   (fondo claro)
+
+Fuente: Inter (Google Fonts)
+
+Clases CSS personalizadas:
+  .card-glass           → Tarjeta con glassmorphism y bordes suaves
+  .gradient-petwell     → Gradiente de marca (navy → blue → teal)
+  .text-gradient-petwell → Texto con gradiente azul-teal
+  .animate-fade-in      → Fade in suave (0.4s)
+  .animate-slide-up     → Slide up (0.5s)
+  .animate-float        → Flotación infinita (3s)
+
+Variantes del botón Button.tsx:
+  primary   → bg-petwell-blue (azul)
+  secondary → bg-petwell-teal (verde agua)
+  danger    → bg-red-500
+  outline   → border petwell-blue
+
+────────────────────────────────────────
+  6. AUTENTICACIÓN
+────────────────────────────────────────
+Mecanismo: JWT guardado en localStorage con clave 'petwell_token'
+
+Helpers en utils/auth.ts:
+  saveToken(token)       → Guardar JWT
+  getToken()             → Obtener JWT (null si no existe)
+  removeToken()          → Eliminar JWT (logout)
+  isAuthenticated()      → boolean (token presente y no vacío)
+
+AuthContext (context/AuthContext.tsx):
+  Provee: { user, token, isAuthenticated, loading, login, logout }
+  Login: saveToken + actualiza estado React
+  Logout: removeToken + limpia estado React
+
+Navbar:
+  Lee user.role desde useAuthContext() (no más isAuthenticated() de localStorage)
+  Muestra: "Mi Panel", "Contraseña" solo si autenticado
+  Muestra: "Panel Clínica" SOLO si user.role === 'CLINIC_ADMIN'
+  Oculto para DUENO_MASCOTA y demás roles en desktop y menú móvil
+  Botón "Cerrar sesión" llama a logout() del contexto + removeToken()
+
+Protección de rutas:
+  /dashboard         → Redirige a /login si no hay token
+  /clinic-dashboard  → Requiere token + rol CLINIC_ADMIN
+                       Si no hay token → redirige a /login
+                       Si rol incorrecto → redirige a /dashboard
+
+RoleGuard (components/auth/RoleGuard.tsx):
+  Props: allowedRoles, redirectTo (default: /dashboard), children
+  Flujo:
+    1. loading → spinner
+    2. Sin token → router.replace('/login')
+    3. Rol no permitido → router.replace(redirectTo)
+    4. Rol correcto → renderiza children
+  Uso: envuelto en layout.tsx de la ruta protegida
+
+────────────────────────────────────────
+  7. PÁGINAS Y FUNCIONALIDADES
+────────────────────────────────────────
+/                     Home / Landing page con características de PetWell
+/login                Formulario de login con validación y redirección
+/register             Selector de tipo de cuenta + formulario dinámico:
+                        • Dueño de mascota → POST /api/users/register
+                        • Clínica veterinaria → POST /api/clinics/register
+/dashboard            Panel del usuario: perfil, rol, fecha de registro, logout
+                        • DUENO_MASCOTA → cards: Mis Mascotas, Mis Citas, Historial Médico, Mi Perfil
+                        • CLINIC_ADMIN  → cards: Panel Clínica, Personal Veterinario,
+                                                  Agregar Veterinario, Mi Cuenta
+/profile              Edición de cuenta (tabs):
+                        • Información personal: name, email, phone → PUT /users/profile
+                        • Cambiar contraseña: current + new + confirm → PUT /users/change-password
+                        • Llama refreshUser() tras guardar para sincronizar AuthContext
+/change-password      Formulario independiente (mantiene compatibilidad)
+/forgot-password      Recuperación de contraseña (página existente)
+/clinic-dashboard     Panel exclusivo para CLINIC_ADMIN:
+                        • Stats: total personal / veterinarios / recepcionistas
+                        • Tabla de personal con: nombre, email, teléfono, rol, licencia, fecha
+                        • Vista móvil con cards responsive
+                        • Estado vacío + botón CTA
+                        • Usa user.clinic_id de AuthContext en GET /clinics/:id/staff
+                        • Botón "Agregar veterinario" → /clinic-dashboard/add-veterinarian
+                        • Botón "Agregar Recepcionista" → /clinic-dashboard/add-receptionist
+/clinic-dashboard/
+  add-veterinarian    Formulario para agregar veterinario (name, email, phone, license_number, password)
+  add-receptionist    Formulario para agregar recepcionista (name, email, phone, password)
+
+────────────────────────────────────────
+  8. SERVICIOS API (services/)
+────────────────────────────────────────
+authService.ts:
+  registerOwner(payload)      → POST /users/register
+  login(payload)              → POST /users/login
+
+clinicService.ts:
+  registerClinic(payload)             → POST /clinics/register
+  addVeterinarian(payload, token)     → POST /users/veterinarians
+  getClinic(id, token?)               → GET  /clinics/:id
+  getClinicStaff(id, token?)          → GET  /clinics/:id/staff
+
+userService.ts:
+  getProfile(token)              → GET /users/profile
+  updateProfile(token, payload)  → PUT /users/profile
+  changePassword(token, payload) → PUT /users/change-password
+  addReceptionist(token, payload)→ POST /users/receptionists
+
+api.ts (original, backward-compatible):
+  register, login, getProfile, changePassword → mantiene compatibilidad
+
+────────────────────────────────────────
+  9. VARIABLES DE ENTORNO
+────────────────────────────────────────
+Archivo: .env.local
+  NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+
+Notas:
+  - El prefijo NEXT_PUBLIC_ expone la variable al browser
+  - Cambiar según el entorno (local, staging, producción)
+
+────────────────────────────────────────
+  10. FLUJOS IMPLEMENTADOS
+────────────────────────────────────────
+[A] Registro Dueño de Mascota:
+    /register → seleccionar "Dueño" → completar form → POST /users/register
+    → éxito → redirige a /login
+
+[B] Registro Clínica Veterinaria:
+    /register → seleccionar "Clínica" → completar form (8 campos) →
+    POST /clinics/register → éxito → redirige a /login
+
+[C] Login:
+    /login → email + password → POST /users/login → guarda JWT en localStorage
+    → redirige a /dashboard (1.2s)
+
+[D] Agregar Veterinario / Recepcionista:
+    /clinic-dashboard → "Agregar Veterinario" ó "Agregar Recepcionista"
+    → /clinic-dashboard/add-veterinarian ó /add-receptionist
+    → completar form + JWT en header
+    → POST /users/veterinarians ó /users/receptionists → mensaje de éxito
+
+[E] Cambio de Contraseña:
+    /change-password → current_password + new_password + JWT →
+    PUT /users/change-password → mensaje de confirmación
+
+[F] Logout:
+    Cualquier botón "Cerrar sesión" → removeToken() → /login
+
+────────────────────────────────────────
+  11. BUENAS PRÁCTICAS IMPLEMENTADAS
+────────────────────────────────────────
+✓ Validación de formularios del lado del cliente (antes del envío)
+✓ Mensajes de error específicos por campo
+✓ Mensajes de éxito/error globales con componente Alert
+✓ Estado loading en botones (disabled + spinner)
+✓ Manejo de errores HTTP con mensajes del backend
+✓ Redirección automática al login si token inválido/expirado
+✓ noValidate en formularios (validación propia, no del navegador)
+✓ autoComplete en inputs para mejor UX
+✓ TypeScript estricto en todos los archivos
+✓ Separación de responsabilidades (services / hooks / context / ui)
+
+────────────────────────────────────────
+  12. HISTORIAL DE CAMBIOS
+────────────────────────────────────────
+v1.0 — Inicial
+  • Registro de dueño de mascota
+  • Login con JWT
+  • Dashboard de perfil
+  • Cambio de contraseña
+  • Logout en Navbar y Dashboard
+
+v2.0 — Expansión multi-rol
+  • Página de registro con selector de tipo de cuenta
+  • Formulario de clínica veterinaria (8 campos)
+  • Panel de clínica (/clinic-dashboard)
+  • Formulario para agregar veterinarios
+  • Servicios: authService.ts, clinicService.ts, userService.ts
+  • Contexto global: AuthContext.tsx
+  • Hook: useAuth.ts
+  • Tipos nuevos: ClinicRegisterRequest, Clinic, ClinicResponse,
+                  VeterinarianRequest, AccountType
+  • Navbar actualizado con link "Panel Clínica"
+
+v3.0 — Protección de rutas por rol
+  • Enum UserRole: ADMIN | CLINIC_ADMIN | VETERINARIO | RECEPCIONISTA | DUENO_MASCOTA
+  • Componente RoleGuard (components/auth/RoleGuard.tsx)
+  • Layout protegido: app/clinic-dashboard/layout.tsx (solo CLINIC_ADMIN)
+  • Redirige a /dashboard si el rol no coincide
+  • Tipos nuevos: ClinicDetail, ClinicDetailResponse, StaffMember, StaffListResponse
+  • clinicService.ts: nuevas funciones getClinic(id) y getClinicStaff(id)
+
+v3.1 — UI por roles y panel de clínica mejorado
+  • Navbar: usa useAuthContext(); "Panel Clínica" solo visible a CLINIC_ADMIN
+  • Dashboard: acciones rápidas según rol (DUENO_MASCOTA vs CLINIC_ADMIN)
+  • getRolLabel / getRolColor actualizados para los 5 UserRoles
+  • clinic-dashboard: stat cards (total/vets/recepcionistas) en vivo
+  • clinic-dashboard: tabla de personal (nombre, email, rol, licencia, fecha)
+  • clinic-dashboard: lista móvil responsive
+  • clinic-dashboard: estado vacío con CTA, loading y error con reintentar
+  • clinic-dashboard: llama a GET /clinics/:id/staff vía getClinicStaff()
+
+v3.2 — Corrección de hidratación y cuenta de usuario
+  • AuthContext: llama GET /users/profile al iniciar si hay token → user siempre hidratado
+  • AuthContext: agrega refreshUser() para re-sincronizar tras editar perfil
+  • types/index.ts: nueva interfaz UpdateProfileRequest { name, email, phone? }
+  • userService.ts: nueva función updateProfile() → PUT /users/profile
+  • add-veterinarian: campo phone (opcional) agregado al formulario
+  • Nueva página /profile: tabs Información personal + Cambiar contraseña
+v4.0 — Extensión de Personal y Perfil
+  • Tipos actualizados con roles estrictos ('VETERINARIO' | 'RECEPCIONISTA') para StaffMember
+  • User type ahora incluye clinic_id opcional
+  • userService: nuevo método addReceptionist (POST /users/receptionists)
+  • /clinic-dashboard modificado para extraer clinic_id desde contexto
+  • Tabla actualizda y botón "Agregar Recepcionista" implementado
+  • Nueva página /clinic-dashboard/add-receptionist
+  • clinic-dashboard: parsing robusto del array de staff, evitando el error `staff.filter is not a function` independientemente de si el backend exporta `{ success, data }` o un array plano
+
+v4.1 — Fix extractStaffArray + Debug Logging
+  • Confirmada la estructura real del backend para GET /clinics/:id/staff:
+      { success: true, message: "...", data: { staff: [ ...StaffMember ] } }
+  • extractStaffArray en clinicService.ts ahora soporta TODAS las variantes:
+      - Array plano
+      - { data: [] }
+      - { data: { data: [] } }
+      - { staff: [] }
+      - { data: { staff: [] } }   ← CASO REAL DEL BACKEND (fix de este release)
+  • getClinicStaff ahora retorna StaffMember[] directamente (sin parsing en el componente)
+  • clinic-dashboard/page.tsx: useEffect ahora escucha [user] completo (no solo clinic_id)
+    para capturar hidratación tardía del AuthContext
+  • Logs de debug añadidos:
+      [PetWell] getClinicStaff → CLINIC ID / RAW RESPONSE / EXTRACTED ARRAY
+      [PetWell] clinic-dashboard → USER / CLINIC ID / STAFF STATE
+  • Fallback visual cuando clinic_id es undefined en el perfil
+
+v4.2 — Limpieza de UI y coherencia visual
+  • clinic-dashboard: eliminado botón "Cerrar sesión" duplicado del cuerpo de la página
+    (se mantiene únicamente en el Navbar como estándar de navegación)
+  • Navbar: eliminado enlace "Contraseña" del menú desktop y del menú móvil
+    (el cambio de contraseña está disponible en Acciones rápidas del panel de clínica)
+  • clinic-dashboard: eliminado botón "Agregar veterinario" redundante del footer de la tabla
+    (se mantienen los botones superiores y las tarjetas de Acciones rápidas)
+  • clinic-dashboard: título de sección cambiado de "Personal veterinario"
+    a "Equipo de la Clínica" para reflejar correctamente que incluye ambos roles
+  • Sin modificaciones a lógica, hooks, servicios ni llamadas al backend
+
+v4.3 — Fix Auth Bug + UX Improvements
+  • BUG CRÍTICO CORREGIDO: login/page.tsx ahora llama authLogin(token, user) desde
+    useAuthContext() tras login exitoso → Navbar se actualiza inmediatamente sin recargar
+  • login/page.tsx: eliminado saveToken() redundante (AuthContext.login() lo hace internamente)
+  • login/page.tsx: agregado router.refresh() después de router.push('/dashboard')
+    para forzar re-render del layout raíz (Navbar, RoleGuard, etc.)
+  • dashboard/page.tsx: eliminado botón "Cerrar sesión" duplicado del header de bienvenida
+  • dashboard/page.tsx: tarjetas "Mi Perfil" y "Mi Cuenta" ahora apuntan a /profile
+    (antes apuntaban a /change-password, que es solo cambio de contraseña)
+  • clinicService.ts: nueva función updateClinic(id, payload, token) → PUT /clinics/:id
+    con interfaz UpdateClinicPayload { clinic_name?, address?, phone?, email?, city? }
+  • profile/page.tsx: nuevo tercer tab "Mi Clínica" visible solo para CLINIC_ADMIN
+    con formulario para editar nombre, dirección, ciudad, teléfono y correo de la clínica
+    Llama a updateClinic() de clinicService.ts
+
+v4.4 — Navbar Redesign & UI Polish
+  • Navbar.tsx: reescrito para incluir un menú dropdown con el avatar del usuario en Desktop.
+  • Navbar.tsx: menú móvil animado (slide-down) con información de perfil del usuario.
+  • Navbar.tsx: posicionamiento sticky mejorado y estilos profesionales añadidos.
+  • Se eliminaron los logs de debug temporales en clinicService.ts y clinic-dashboard/page.tsx.
+
+v4.5 — Clinic Profile Fields (Mi Clínica tab)
+  • profile/page.tsx ClinicTab: al montar llama GET /clinics/:id para precargar TODOS los campos
+      (clinic_name, address, city, phone, email, opening_hours, specialties)
+      → Muestra spinner de carga mientras espera la respuesta
+      → En caso de error de red el formulario sigue editable (vacío)
+  • profile/page.tsx ClinicTab: añadidos dos nuevos textarea:
+      "Horarios de atención" (opening_hours) y "Especialidades" (specialties)
+      con hint text y estilos consistentes con el sistema de diseño
+  • profile/page.tsx ClinicTab: handleSubmit incluye opening_hours y specialties en el payload
+      → Se envían a PUT /clinics/:id solo si tienen contenido (spread condicional)
+  • clinicService.ts: getClinic importado y usado en profile/page.tsx
+  • UpdateClinicPayload: ya incluye opening_hours y specialties (v4.5 anterior)
+
+v5.0 — Pet Management (Módulo de Mascotas)
+  NUEVO SERVICIO: services/petService.ts
+    getPets(token)              → GET  /pets      → Pet[]
+    getPetById(id, token)       → GET  /pets/:id  → Pet | null
+    createPet(payload, token)   → POST /pets      → PetResponse
+    updatePet(id, payload, t)   → PUT  /pets/:id  → PetResponse
+    deletePet(id, token)        → DELETE /pets/:id
+
+  NUEVOS TIPOS (types/index.ts):
+    Pet         → entidad mascota (id, owner_id, name, species, breed, birth_date, sex, weight, microchip, allergies, primary_clinic_id)
+    PetRequest  → payload de creación / actualización
+    PetResponse → respuesta singular { success, message, data: Pet }
+    PetListResponse → respuesta lista { success, message, data: Pet[] }
+
+  NUEVAS PÁGINAS:
+    /pets              → Lista de mascotas con cards (emoji, nombre, raza, edad calculada, peso, alergias)
+                          Grid 1-2-3 cols responsive. Botones Ver, Editar, Eliminar (doble confirmación inline).
+                          Estado vacío con CTA. Auto-remove del card al eliminar.
+    /pets/add          → Formulario de registro con todos los campos.
+                          Campos: nombre, especie, raza, fecha_nac, sexo (select), peso, microchip, alergias, clínica_id
+                          Solo nombre y especie son obligatorios.
+    /pets/[id]/edit    → Formulario pre-llenado desde getPetById(). Guarda con updatePet().
+    /pets/[id]         → Detalle de mascota: hero card con emoji, InfoRow para cada campo,
+                          alerta de alergias destacada, botones Editar y Eliminar (confirmación).
+
+  DASHBOARD:
+    La card "Mis Mascotas" en OwnerQuickActions ya apuntaba a /pets (confirmado).
+
+v5.1 — Clínica principal con SELECT dinámico
+  • clinicService.ts: nueva función getClinics(token?) → GET /clinics → Clinic[]
+      Normaliza respuestas: array plano / { data: [] } / { data: { clinics: [] } }
+  • /pets/add y /pets/[id]/edit: campo "ID de clínica" (input texto) reemplazado por:
+      SELECT dinámico cargado al montar desde GET /clinics
+      Opción vacía: "Sin clínica asignada" (primaryClinicId → undefined en el payload)
+      Disabled con "Cargando clínicas..." mientras espera la respuesta
+      En /pets/[id]/edit: pre-selecciona la clínica actual del pet al cargar
+  • Payload POST/PUT nunca envía el ID como texto libre; siempre usa el id del select
+
+v5.1 — Fix formato de fecha en registro de mascotas
+  • El formulario de registro y edición de mascotas ahora convierte automáticamente 
+    la fecha de nacimiento al formato ISO (YYYY-MM-DD) usando 
+    new Date().toISOString().split('T')[0] requerido por PostgreSQL y el Pet Service, 
+    evitando errores 422 de validación.
+
+v5.2 — Normalización de species y sex
+  • El formulario de mascotas ahora transforma valores del formulario
+    (perro, gato, Macho, Hembra) a los valores estándar requeridos por el Pet Service
+    (DOG, CAT, MALE, FEMALE), evitando errores de validación 422.
+
+v5.3 — Normalización completa de payload de mascotas
+  • El formulario de mascotas ahora normaliza completamente el payload antes de 
+    enviarlo al Pet Service, asegurando tipos correctos para weight (Number), 
+    microchip (String) y primary_clinic_id (string | undefined), evitando errores 
+    422 de express-validator.
+
+v5.4 — Corrección de case en campo sex
+  • El formulario de mascotas ahora envía el campo sex en minúsculas
+    (male / female) para cumplir con la validación del Pet Service
+    y evitar errores 422.
+
+v5.5 — Traducción de etiquetas de especie y sexo
+  • Las tarjetas de mascotas ahora traducen los valores internos del backend
+    (DOG, CAT, male, female) a etiquetas en español visibles para el usuario
+    (Perro, Gato, Macho, Hembra).
+
+v5.6 — Soporte para múltiples dueños
+  • Se añadió la funcionalidad para agregar nuevos dueños a una mascota
+    mediante su correo electrónico usando el endpoint POST /pets/:id/owners.
+  • petService.ts: nueva función addPetOwner(petId, email, token)
+  • /pets/[id]/page.tsx: nueva sección "Dueños de la mascota" con formulario
+    inline para agregar co-dueños por email, con validación, loading y éxito/error.
+
+v5.8 — Gestión completa de dueños de mascotas
+  • La página de detalle de mascota ahora permite:
+    - Ver la lista de dueños (GET /pets/:id/owners)
+    - Agregar nuevos dueños mediante email (POST /pets/:id/owners)
+    - Eliminar dueños individualmente (DELETE /pets/:petId/owners/:ownerId)
+  • petService.ts: nuevas funciones getPetOwners() y removePetOwner()
+  • La lista se refresca automáticamente tras agregar o eliminar un dueño.
+
+v6.0 — Módulo de Historial Clínico (EHR)
+  • Nuevos tipos: EhrRecord, EhrRequest, EhrResponse, EhrListResponse, EhrAuditEntry, EhrConsentEntry
+  • Servicio: ehrService.ts con operaciones CRUD integrales, gestión de consentimiento y log de auditoría
+  • Utils: ehr.ts con función maskSensitiveField, formatVisitDate y badges de auditoría
+  • Nuevas páginas bajo /pets/[id]/ehr:
+    - Lista de registros clínicos con acceso rápido a consentimientos y auditoría
+    - Formulario de creación con badges "🔒 Cifrado" en campos sensibles (diagnóstico, tratamiento, notas)
+    - Vista de detalle con visualización de datos sensibles y eliminación
+    - Gestión de consentimientos de acceso por clínica (/consent)
+    - Registro de auditoría visual e interactivo (/audit)
+  • Página de detalle de la mascota (/pets/[id]/page.tsx) actualizada con link hacia el historial clínico
+
+v6.3 — Consentimiento real de clínicas
+  • ehrService.ts: reemplazados endpoints stub por rutas reales del backend:
+      getPermissions(petId, token)          → GET  /ehr/permissions/:petId
+      grantPermission(petId, clinicId, t)   → POST /ehr/permissions  { pet_id, clinic_id }
+      revokePermission(petId, clinicId, t)  → DELETE /ehr/permissions  { pet_id, clinic_id }
+  • Aliases de compatibilidad mantenidos: getClinicConsents, grantClinicAccess, revokeClinicAccess
+  • /pets/[id]/ehr/page.tsx reescrito: sección "Clínicas con acceso" cargada desde la API real
+      - Visible únicamente para rol DUENO_MASCOTA; oculta para CLINIC_ADMIN y demás roles
+      - Lazy-load: se activa al hacer clic en el botón "🏥 Consentimientos"
+      - Toggle: el botón cambia de estilo al activarse/desactivarse
+      - Lista, añadir y revocar permisos sin salir de la página
+
+v6.4 — Auditoría real de accesos
+  • ehrService.ts: nueva función getAudit(petId, token) → GET /ehr/audit/:petId
+  • Alias de compatibilidad mantenido: getEhrAuditLog
+  • /pets/[id]/ehr/audit/page.tsx reescrito con datos reales:
+      - Cards por evento con: badge de acción (VIEW/CREATE/UPDATE/DELETE) codificado por color,
+        nombre del actor, rol traducido al español, clínica asociada, fecha y hora formateados
+      - Estado vacío y manejo de error conformes al sistema de diseño
+
+v7.0 — Panel de clínica completo (Mascotas + Control de Roles)
+  • petService.ts: nueva función getPetsByClinic(token) → GET /pets/clinic
+  • Nueva página /clinic-dashboard/pets con grid de mascotas de la clínica:
+      - Badge de rol del usuario, banner de autorización, tarjetas con espécie/raza/edad/alergias
+      - Botón "Ver historial clínico" disponible para todos los roles de clínica
+  • clinic-dashboard/layout.tsx: RoleGuard ampliado para VETERINARIO y RECEPCIONISTA
+  • clinic-dashboard/page.tsx: tarjeta de acción rápida "🐾 Ver mascotas" añadida
+  • Control de roles en UI:
+      DUENO_MASCOTA: Ve y gestiona permisos, puede crear y eliminar consultas
+      VETERINARIO   : Ve mascotas de la clínica, puede crear y eliminar consultas
+      CLINIC_ADMIN  : Ve mascotas de la clínica, solo lectura en EHR (sin crear/eliminar)
+      RECEPCIONISTA : Ve mascotas de la clínica, solo lectura en EHR (sin crear/eliminar)
+  • Banner informativo para personal sin privilegios de edición
+  • Botón "Eliminar" en detalle de consulta oculto para CLINIC_ADMIN y RECEPCIONISTA
+
+v7.1 — Correcciones finales de roles y UX
+  • canCreate: restringido a VETERINARIO únicamente (se elimina permiso de DUENO_MASCOTA para crear)
+  • canDelete: restringido a VETERINARIO únicamente en detalle de consulta
+  • Banner informativo para DUENO_MASCOTA: "El historial clínico solo puede ser creado y gestionado por profesionales"
+  • Banner diferenciado para RECEPCIONISTA: "Modo solo lectura: no tienes permisos para modificar registros clínicos."
+  • Banner genérico para CLINIC_ADMIN: "Solo el personal autorizado puede modificar registros clínicos."
+  • Audit page rediseñada con actionConfig visual:
+      CREATE  → verde  + ➡ ➕
+      VIEW    → azul   + ➡ 👁️
+      UPDATE  → amarillo + ➡ ✏️
+      DELETE  → rojo   + ➡ 🗑️
+  • Cards de auditoría con borde lateral izquierdo del color de la acción y leyenda en el header
+
+v7.2 — Corrección de navegación, roles y UX clínica
+  • login.tsx: Redirección post-login por rol (DUENO_MASCOTA → /pets, staff → /clinic-dashboard)
+  • dashboard: Corrección en link "Historial Médico" (ahora redirige a /pets)
+  • dashboard: Redirección automática de staff de clínica hacia su propio panel
+  • pets: /pets redirige inmediatamente a /clinic-dashboard si el rol no es DUENO_MASCOTA
+  • EHR Consentimiento: El input de texto para clinic_id se reemplazó por un <select> basado en getClinics() excluyendo clínicas con acceso pre-existente
+  • EHR Creación: Payload final envía el clinic_id tomado de user.clinic_id desde el JWT en createEhr
+  
+v7.3 — Correcciones finales de roles, UX, navegación y manejo de errores en EHR
+  • A. 403 fallback silencioso: owner siempre ve la página EHR; errores 403 no se muestran como alert rojo
+  • B. Estado vacío profesional y reforzado por rol:
+      OWNER     → Mensaje informativo + icono 🧾 + nota veterinaria
+      STAFF     → Mensaje estándar + botón "+ Registrar consulta" visible solo para VET
+  • C. Error selector inteligente: solo visible a personal clínico (nunca al dueño)
+  • D. getPetsByClinic ya usaba JWT bearer correctamente (sin hardcoding de UUID validado)
+  • E. Dashboard: Nuevo VetQuickActions dedicado (mascotas clínica + panel) reemplaza la vista de dueño
+  • F. Dashboard: Nuevo ReceptionistQuickActions con banner de modo solo lectura visible en /dashboard
+  • G. Roles CLINIC_ADMIN y RECEPCIONISTA: sin botón de crear/eliminar consultas (ya en v7.1)
+  • H. Selector clínicas: fallback "No hay clínicas disponibles" cuando lista vacía tras filtrar ya-autorizadas
+  • I. Seguridad frontend confirmada: canCreate=VET, canDelete=VET, consentimientos=OWNER solamente
+  • J. Rutas: confirmado que no existen links a /ehr plano (todos son /pets/[id]/ehr)
+
+================================================================================
+  
+v7.4 - Fix encoding UTF-8, endpoint /pets/clinic corregido, hooks en dashboard  
+  - A. layout.tsx: meta charSet utf-8 anadida  
+  - B. ELIMINADO getPetsByClinic de petService.ts. clinic-dashboard/pets usa getPets+filtro por primary_clinic_id  
+  - C. React Hooks orden corregido: useEffects ahora van antes de returns condicionales en dashboard  
+  - D. Dashboard: VET-VetQuickActions, RECEP-ReceptionistQuickActions, OWNER-OwnerQuickActions 
+  
+v7.5 - Fix encoding UTF-8 real, correccion de carga de clinic_id desde profile, arreglo de filtrado de mascotas por clinica y sincronizacion completa del AuthContext 
+  
+v7.6 - Integracion del endpoint GET /pets/clinic en frontend, eliminacion de filtro por clinic_id en cliente y delegacion completa al backend 
+  
+v7.7 - Fix redireccion indebida en dashboard mediante validacion de pathname 
+  
+v7.8 - Separacion completa de dashboards por rol y control de permisos UI 
+  
+v7.9 - Mejora UX en EHR: manejo correcto de 403 como estado de consentimiento en lugar de error 
+  
+v9.0 - Arquitectura frontend alineada a microservicios y dashboards por rol escalables 
+  
+v7.4 - Fix encoding UTF-8, endpoint /pets/clinic corregido, hooks en dashboard  
+  - A. layout.tsx: meta charSet utf-8 anadida  
+  - B. ELIMINADO getPetsByClinic de petService.ts. clinic-dashboard/pets usa getPets+filtro por primary_clinic_id  
+  - C. React Hooks orden corregido: useEffects ahora van antes de returns condicionales en dashboard  
+  - D. Dashboard: VET-VetQuickActions, RECEP-ReceptionistQuickActions, OWNER-OwnerQuickActions 
+  
+v7.5 - Fix encoding UTF-8 real, correccion de carga de clinic_id desde profile, arreglo de filtrado de mascotas por clinica y sincronizacion completa del AuthContext 
+  
+v7.6 - Integracion del endpoint GET /pets/clinic en frontend, eliminacion de filtro por clinic_id en cliente y delegacion completa al backend 
+  
+v7.7 - Fix redireccion indebida en dashboard mediante validacion de pathname 
+  
+v7.8 - Separacion completa de dashboards por rol y control de permisos UI 
+  
+v7.9 - Mejora UX en EHR: manejo correcto de 403 como estado de consentimiento en lugar de error 
+  
+v9.0 - Arquitectura frontend alineada a microservicios y dashboards por rol escalables 
+  
+v10.0 - Fix definitivo de render por rol, sincronizacion con AuthContext y control de redireccion 
+  
+v10.0 - Fix definitivo de token, render por rol con AuthContext, debug logs y validacion defensiva 
+  
+v10.2 - Separacion de logica por rol en clinic-dashboard y eliminacion de 403 por endpoints restringidos 
+
+v10.3 - Mejoras de navegacion y acceso para roles clinicos
+  • app/dashboard/page.tsx: Eliminada redirección automática a /clinic-dashboard. El dashboard principal ahora renderiza directamente la vista correspondiente al rol (incluyendo CLINIC_ADMIN) evitando loops de navegación.
+  • components/layout/Navbar.tsx: Agregado acceso directo "Panel de Clínica" para todos los roles de clínica (CLINIC_ADMIN, VETERINARIO, RECEPCIONISTA). Implementado en barra principal, menú de usuario y versión móvil.
+
+v11.0 - Módulo de Citas y Agenda (Appointment Service)
+  NUEVOS TIPOS (types/index.ts):
+    AppointmentStatus → 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW'
+    AppointmentType   → 'PRESENCIAL' | 'TELEMEDICINA'
+    Appointment       → entidad cita completa (id, clinic_id, vet_id, pet_id, owner_id, date, start_time, status, type, reason, notes, cancelled_reason)
+    AppointmentRequest / AppointmentStatusRequest / AppointmentResponse / AppointmentListResponse
+    AvailabilitySlot  → { time: HH:MM, is_available: boolean }
+    ClinicSchedule    → horario por día de semana (id, clinic_id, day_of_week, open_time, close_time, is_active)
+    VetBlock          → bloque de veterinario (id, clinic_id, vet_id, day_of_week, start_time, end_time, slot_duration_minutes)
+    WaitlistEntry     → entrada de lista de espera con status: WAITING | NOTIFIED | SCHEDULED | CANCELLED
+    DayOfWeek         → 'MONDAY' | ... | 'SUNDAY'
+
+  NUEVO SERVICIO: services/appointmentService.ts
+    Appointments: getAppointments, getAppointmentById, createAppointment, updateAppointment, deleteAppointment, changeAppointmentStatus
+    Availability:  getAvailability(clinicId, date, vetId) → AvailabilitySlot[]
+    Schedules:     getSchedules, createSchedule, updateSchedule, deleteSchedule
+    VetBlocks:     getVetBlocks, createVetBlock, updateVetBlock, deleteVetBlock
+    Waitlist:      getWaitlist, updateWaitlistStatus
+    Error handling: 401 → auto-logout+redirect, 409 → 'SLOT_TAKEN', 403 → 'FORBIDDEN', 500 → 'SERVER_ERROR'
+
+  NUEVOS COMPONENTES (components/appointments/):
+    StatusBadge.tsx        → badge por AppointmentStatus (colors: amarillo/verde/rojo/gris/naranja)
+    AppointmentCard.tsx    → tarjeta con info de cita + botón cancelar para PENDING/CONFIRMED
+    SlotPicker.tsx         → grid de slots disponibles/ocupados con skeleton loading y empty state
+    CancelModal.tsx        → modal con campo de motivo obligatorio + validación inline
+    Toast.tsx / useToast() → sistema de toasts (success/error/info) con auto-dismiss y friendlyError()
+
+  NUEVAS PÁGINAS:
+    /appointments                → OwnerAppointmentsPage (DUENO_MASCOTA):
+                                    Lista de citas con filtros status+fecha, CancelModal, empty state, optimistic update
+    /appointments/new            → NewAppointmentPage (DUENO_MASCOTA):
+                                    Wizard de 5 pasos con progress bar:
+                                    1. Seleccionar mascota   (GET /pets)
+                                    2. Seleccionar clínica   (GET /clinics con filtro búsqueda)
+                                    3. Fecha + veterinario   (GET /vetblocks/:clinicId filtrado por día)
+                                    4. Slot disponible       (GET /appointments/availability — solo carga si clínica+fecha+vet seleccionados)
+                                    5. Confirmar + tipo + motivo (POST /appointments)
+                                    Error 409 → toast "Este horario ya fue tomado"
+    /appointments/:id            → AppointmentDetailPage (todos los roles):
+                                    DUENO_MASCOTA → puede cancelar citas PENDING/CONFIRMED
+                                    VETERINARIO   → botones COMPLETED/NO_SHOW + link EHR
+    /clinic/appointments         → ClinicAppointmentsPage (CLINIC_ADMIN, RECEPCIONISTA, VETERINARIO):
+                                    VET: lista filtrada de sus citas con botones COMPLETED/NO_SHOW
+                                    ADMIN/RECEP: tabla completa con dropdown de cambio de estado,
+                                    cancelación modal, eliminación (solo CLINIC_ADMIN) con confirmación inline
+    /clinic/schedules            → ClinicSchedulesPage (CLINIC_ADMIN):
+                                    Tabla Lun-Dom con open/close time, toggle is_active, modal edición
+    /clinic/vetblocks            → VetBlocksPage (CLINIC_ADMIN):
+                                    Bloques agrupados por veterinario, modal agregar/editar con selector de slot duration
+    /clinic/waitlist             → WaitlistPage (CLINIC_ADMIN, RECEPCIONISTA):
+                                    Tabla con dropdown de cambio de estado (WAITING→NOTIFIED→SCHEDULED→CANCELLED)
+
+  UX / ROBUSTEZ (todas las vistas):
+    ✓ LoadingSpinner mientras carga data (citas, slots, vets, horarios)
+    ✓ Empty states claros con mensaje y CTA
+    ✓ Toasts de éxito/error tras cada acción (crear, cancelar, cambiar estado, eliminar)
+    ✓ Errores inline en formularios (campo requerido, slot, mascota, fecha)
+    ✓ Refresh automático de lista tras crear/cancelar/editar cita
+    ✓ Optimistic updates para cancelación y cambio de estado
+    ✓ GET /vetblocks solo carga después de seleccionar clínica
+    ✓ GET /availability solo carga si clínica+fecha+vet están seleccionados
+    ✓ 401 → limpia sesión y redirige a /login automáticamente
+    ✓ 409 → "Este horario ya fue tomado. Por favor elige otro slot."
+    ✓ 403 → "No tienes permisos para realizar esta acción."
+    ✓ RoleGuard en todos los layouts: no queda pantalla en blanco
+
+  NAVBAR (components/layout/Navbar.tsx):
+    DUENO_MASCOTA → link "Mis Citas" → /appointments (barra, dropdown, móvil)
+    Roles clínica → link "Agenda"   → /clinic/appointments
+    CLINIC_ADMIN  → link "Horarios" → /clinic/schedules
+
+v11.1 - Fix flujo de agendamiento para DUENO_MASCOTA (sin vetblocks)
+  PROBLEMA: GET /api/v1/vetblocks/:clinicId retornaba 403 para DUENO_MASCOTA.
+
+  CAMBIOS:
+  • types/index.ts: AvailabilitySlot ahora incluye veterinarian_id? y veterinarian_name?
+    El backend retorna estos campos por slot para identificar el vet asignado.
+  • services/appointmentService.ts: getAvailability() — parámetro veterinarianId ahora
+    es opcional. Si se omite, el backend calcula disponibilidad global de la clínica.
+  • app/appointments/new/page.tsx: Wizard reducido de 5 pasos a 4 pasos:
+      Paso 1 → Seleccionar mascota
+      Paso 2 → Seleccionar clínica
+      Paso 3 → Seleccionar fecha + slot (GET /appointments/availability?clinic_id=&date= sin vet)
+      Paso 4 → Confirmar (tipo + motivo) → POST /appointments con veterinarian_id del slot
+
+  ELIMINADO: toda llamada a GET /vetblocks en el flujo de DUENO_MASCOTA.
+  El frontend extrae veterinarian_id directamente de cada AvailabilitySlot devuelto.
+
+v11.2 - Gestión de Vetblocks y Optimización de Roles en Dashboard
+  • app/clinic/vetblocks/page.tsx: Habilitada la vista de Gestión de Agenda. 
+      - CRUD completo para CLINIC_ADMIN.
+      - Modo solo lectura para VETERINARIO y RECEPCIONISTA (sin botones de creación/edición/eliminación).
+  • components/layout/Navbar.tsx: Menú Desktop y Móvil remapeado en base a roles.
+      - VETERINARIO ve: Mi Panel, Agenda (/clinic/vetblocks), Mis Consultas.
+      - RECEPCIONISTA ve: Agenda (/clinic/vetblocks), Citas, Pacientes.
+      - CLINIC_ADMIN ve: Panel de Clínica, Horarios, Gestión de Agenda, Citas.
+  • components/dashboard/ClinicAdminDashboard.tsx: Se reemplazó la tarjeta "Próximamente" de Gestión de Agenda por una tarjeta funcional enlazada a /clinic/vetblocks.
+
+v11.3 - Seguridad de Rutas Frontend (RoleGuard)
+  • components/auth/RoleGuard.tsx: Modificado para mostrar una pantalla completa de "Acceso No Autorizado" en lugar de una redirección silenciosa e instantánea.
+  • Protección con RoleGuard aplicada e inspeccionada en los siguientes layouts:
+      - /clinic/vetblocks → CLINIC_ADMIN, VETERINARIO, RECEPCIONISTA.
+      - /clinic/schedules → CLINIC_ADMIN.
+      - /clinic/appointments → CLINIC_ADMIN, VETERINARIO, RECEPCIONISTA.
+      - /appointments → DUENO_MASCOTA.
+
+v11.4 - Fix de Zona Horaria (Timezone) y Warning React UI
+  • appointment service/src/services/availability.service.ts: Corregida la conversión matemática de `getDayOfWeek(date)` que desincronizaba los días. Ahora se asigna (0=Sun ... 6=Sat) de forma coincidente a la base de Vetblocks.
+  • components/appointments/SlotPicker.tsx: Resuelto el Error del framework render (Warning: Unique key prop). La enumeración asigna variables únicas `key={`${slot.time}-${slot.veterinarian_id || idx}`}` para prevenir colapsos durante renderizaciones de slots de múltiples veterinarios simultáneos.
+
+v11.5 - Fix SlotPicker Keys y Start/End time logic
+  • types/index.ts: Eliminamos la propiedad deprecada `time` del `AvailabilitySlot` cambiándola por `start_time` y `end_time` devueltos por la API v1.1.
+  • components/appointments/SlotPicker.tsx: 
+      - Validación defensiva para ignorar slots sin iterando (`if (!slot.start_time) return null`).
+      - Actualización de Render: Muestra botón con `${slot.start_time} - ${slot.end_time}`.
+      - Resuelta la Key nula `undefined-<vet-id>` interpolando `start_time` a la key de react.
+
+v11.6 - Enable Availability Slots
+  • components/appointments/SlotPicker.tsx: Se detectó que el frontend evaluaba la llave deprecada `is_available` forzando un disabled generalizado (gris). Dado que el backend ya emite de por sí un array de slots únicamente válidos, se eliminó esta condición y su métrica "X de Y slots disponibles" en favor de mapear los slots directamente y que el array se renderice de forma limpia y seleccionable `disabled={false}`.
+
+v11.7 - Fix createAppointment Payload Struct
+  • types/index.ts & /app/appointments/new/page.tsx: Refactorizamos el método `createAppointment()` el cual rebotaba la toma del turno con código 422 Unprocessable Entity en el servidor debido a incongruencias del JSON body. Las claves `clinic_id` y `date` del Frontend fueron removidas, siendo reemplazado el envío por la estructura requerida `appointment_date`, y anexado el campo faltante `end_time` extraído del slotpicker.  
+  • services/appointmentService.ts: Creada validación defensiva contra turnos malformados antes de lanzar la red `if(!payload...) throw new Error('Payload incompleto')`.
+
+v11.9 - Restauración del Clinic ID 
+  • Re-Alineación del Frontend con Backend: Se restauró la obligatoriedad del campo `clinic_id` en `types/index.ts` y se inyectó en el payload asincrónico `createAppointment` extrayendo el ID directamente de la clínica elegida por el dueño en el Paso 2 del wizard (`selectedClinic.id`), evitando que el API rechace el turno.
+
+v11.8
+- Fix: manejo seguro de fechas en AppointmentCard
+- Corrección de campo appointment_date en frontend
+
+v11.9
+- Normalización del campo appointment_date en todo el frontend
+- Eliminación de campo date legacy
+- Mejora en robustez de renderizado de fechas
+
+
+=== FECHA: 08-04-2026 ===
+- Corregido error en consulta de EHR: el veterinario no se enviaba correctamente desde el frontend debido a un problema con el destructuring de [{ data: { staff } }] devuelto por un proxy incorrecto al usar rutas relativas.
+- Configurada URL Absoluta: Todas las variables BASE_URL del frontend ahora apuntan a process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'.
+- Actualizado User Service para autorizar al rol VETERINARIO el poder acceder a /clinics/:id/staff.
+- Arreglado bug de la interfaz del frontend de consultas para extraer el staff correctamente usando body.data.staff, auto-seleccionando por defecto la primera opción.
+- Configurado el reporsitorio de registros (ehr.repository.ts) para que ordene usando: ORDER BY visit_date DESC, visit_time DESC NULLS LAST, solucionando inconsistencia de tiempos en el PDF clínico.
+- Verificada la arquitectura para despliegue en la nube (Vercel, Render, Railway).

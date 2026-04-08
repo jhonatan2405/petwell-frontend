@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🐾 PetWell – Frontend
 
-## Getting Started
+Frontend principal de la plataforma de gestión veterinaria **PetWell**, construido con **Next.js 14**, **TypeScript** y **Tailwind CSS**.
 
-First, run the development server:
+---
+
+## 🚀 Inicio rápido
+
+### 1. Instalar dependencias
+
+```bash
+npm install
+```
+
+### 2. Configurar variables de entorno
+
+El archivo `.env.local` ya está creado. Verifica que apunte al User Service correcto:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+```
+
+### 3. Iniciar el servidor de desarrollo
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La aplicación estará disponible en: **http://localhost:3000**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> ⚠️ El User Service debe estar corriendo en `http://localhost:3001` para que las funcionalidades de autenticación funcionen.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📁 Estructura del proyecto
 
-To learn more about Next.js, take a look at the following resources:
+```
+petwell-frontend/
+├── app/
+│   ├── layout.tsx          # Layout raíz (Navbar + Footer)
+│   ├── page.tsx            # Landing page
+│   ├── globals.css         # Estilos globales + tokens PetWell
+│   ├── login/
+│   │   └── page.tsx        # Página de inicio de sesión
+│   ├── register/
+│   │   └── page.tsx        # Página de registro
+│   └── dashboard/
+│       └── page.tsx        # Panel del usuario autenticado
+├── components/
+│   ├── layout/
+│   │   ├── Navbar.tsx      # Barra de navegación
+│   │   └── Footer.tsx      # Pie de página
+│   └── ui/
+│       ├── Button.tsx      # Botón reutilizable
+│       ├── Input.tsx       # Campo de entrada
+│       ├── Alert.tsx       # Alertas de éxito/error
+│       └── LoadingSpinner.tsx
+├── services/
+│   └── api.ts              # Cliente HTTP centralizado → User Service
+├── utils/
+│   └── auth.ts             # Helpers del token JWT (localStorage)
+├── types/
+│   └── index.ts            # Interfaces TypeScript
+└── .env.local              # Variables de entorno
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔗 Endpoints consumidos
 
-## Deploy on Vercel
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `POST` | `/users/register` | Registrar nuevo usuario |
+| `POST` | `/users/login` | Iniciar sesión y obtener JWT |
+| `GET`  | `/users/profile` | Obtener perfil autenticado |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Header de autenticación:**
+```
+Authorization: Bearer <token>
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🎨 Paleta de colores PetWell
+
+| Token | Hex | Uso |
+|-------|-----|-----|
+| `petwell-navy` | `#1e3a5f` | Texto principal, fondos oscuros |
+| `petwell-blue` | `#2e86c1` | Color de acento primario |
+| `petwell-teal` | `#48c9a9` | Color de acento secundario |
+| `petwell-light` | `#e8f4fd` | Fondos suaves |
+
+---
+
+## 📦 Build para producción
+
+```bash
+npm run build
+npm start
+```
+
+## ☁️ Despliegue en Vercel
+
+```bash
+# Instalar Vercel CLI
+npm i -g vercel
+
+# Desplegar
+vercel
+
+# Configurar variable de entorno en Vercel:
+# NEXT_PUBLIC_API_URL = https://tu-user-service.com/api/v1
+```
+
+---
+
+## 🛠️ Scripts disponibles
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
+| `npm start` | Iniciar en producción |
+| `npm run lint` | Análisis de código |

@@ -1,8 +1,11 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ==========================================
+# Frontend Project (Next.js / Node.js)
+# ==========================================
 
-# dependencies
-/node_modules
-/.pnp
+# 1. Dependencias (Dependencias)
+# ------------------------------------------
+/node_modules/
+/.pnp/
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -10,32 +13,102 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
+# 2. Archivos Sensibles y Variables de Entorno (Secrets & .env)
+# ------------------------------------------
+# Ignorar todos los archivos de entorno
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Archivos de claves o certificados
 *.pem
+*.key
+*.cert
+*.crt
+# Archivos de credenciales en texto plano
+secrets.json
+credentials.json
 
-# debug
+# 3. Logs y Archivos de Depuración (Logs & Debugging)
+# ------------------------------------------
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+lerna-debug.log*
+*.pid
+*.seed
+*.pid.lock
 
-# env files (can opt-in for committing if needed)
-.env*
+# 4. Archivos de Compilación y Producción (Build Artifacts)
+# ------------------------------------------
+# Next.js
+/.next/
+/out/
+# Otras carpetas comunes de compilación
+/dist/
+/build/
+.cache/
+.swc/
 
-# vercel
-.vercel
+# 5. Testing y Cobertura (Testing & Coverage)
+# ------------------------------------------
+/coverage/
+.nyc_output/
 
-# typescript
+# 6. Archivos Generados por el Sistema Múltiple (System Files)
+# ------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+$RECYCLE.BIN/
+desktop.ini
+
+# 7. Configuraciones de Editores e IDEs (IDEs & Editors)
+# ------------------------------------------
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+# IntelliJ / WebStorm (JetBrains)
+.idea/
+*.iws
+*.iml
+*.ipr
+# Otros
+.nova/
+.zed/
+.fleet/
+
+# 8. Tipado y Herramientas (TS & Tooling)
+# ------------------------------------------
 *.tsbuildinfo
 next-env.d.ts
+
+# 9. Herramientas de Despliegue y Nube (Deployment & Cloud)
+# ------------------------------------------
+.vercel/
+.netlify/
+.serverless/

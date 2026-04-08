@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─── Tokens de diseño PetWell ─────────────────────────────────────────── */
+@theme {
+  /* Colores de marca */
+  --color-petwell-navy:  #1e3a5f;
+  --color-petwell-blue:  #2e86c1;
+  --color-petwell-teal:  #48c9a9;
+  --color-petwell-light: #e8f4fd;
+
+  /* Tipografía */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─── Reset & base ──────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f8faff;
+  color: #1e3a5f;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Animaciones personalizadas ────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+.animate-fade-in  { animation: fade-in  0.4s ease-out both; }
+.animate-slide-up { animation: slide-up 0.5s ease-out both; }
+.animate-float    { animation: float    3s  ease-in-out infinite; }
+
+/* ─── Gradiente de marca ─────────────────────────────────────────────────── */
+.gradient-petwell {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2e86c1 60%, #48c9a9 100%);
+}
+
+.text-gradient-petwell {
+  background: linear-gradient(135deg, #2e86c1 0%, #48c9a9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Card UI ────────────────────────────────────────────────────────────── */
+.card-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(46, 134, 193, 0.12);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 24px rgba(30, 58, 95, 0.08), 0 1px 4px rgba(30, 58, 95, 0.04);
 }
