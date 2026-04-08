@@ -8,7 +8,7 @@ import type {
 } from '@/types';
 
 // ─── URL base del microservicio ───────────────────────────────────────────────
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ─── Helper: realizar petición fetch ─────────────────────────────────────────
 async function request<T>(
@@ -30,7 +30,12 @@ async function request<T>(
     };
 
     const response = await fetch(url, config);
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
+    }
 
     // Si el servidor devuelve error HTTP, lanzamos con el mensaje del backend
     if (!response.ok) {
@@ -42,7 +47,7 @@ async function request<T>(
 
 // ─── Registro de usuario ──────────────────────────────────────────────────────
 export async function register(payload: RegisterRequest): Promise<AuthResponse> {
-    return request<AuthResponse>('/users/register', {
+    return request<AuthResponse>('/api/v1/auth/register', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
@@ -50,7 +55,7 @@ export async function register(payload: RegisterRequest): Promise<AuthResponse> 
 
 // ─── Inicio de sesión ─────────────────────────────────────────────────────────
 export async function login(payload: LoginRequest): Promise<AuthResponse> {
-    return request<AuthResponse>('/users/login', {
+    return request<AuthResponse>('/api/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
@@ -58,7 +63,7 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
 
 // ─── Obtener perfil autenticado ───────────────────────────────────────────────
 export async function getProfile(token: string): Promise<ProfileResponse> {
-    return request<ProfileResponse>('/users/profile', {
+    return request<ProfileResponse>('/api/v1/users/profile', {
         method: 'GET',
         headers: {
             Authorization: `Bearer ${token}`,
@@ -71,7 +76,7 @@ export async function changePassword(
     token: string,
     payload: ChangePasswordRequest
 ): Promise<BaseResponse> {
-    return request<BaseResponse>('/users/change-password', {
+    return request<BaseResponse>('/api/v1/users/change-password', {
         method: 'PUT',
         headers: {
             Authorization: `Bearer ${token}`,

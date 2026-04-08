@@ -24,7 +24,7 @@ import axios from 'axios';
 
 // ─── URL base del API Gateway ─────────────────────────────────────────────────
 const API = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
+    baseURL: process.env.NEXT_PUBLIC_API_URL
 });
 
 API.interceptors.request.use((config) => {
@@ -56,6 +56,10 @@ async function request<T>(
 
     try {
         const response = await API.request<T>(config);
+        const contentType = response.headers?.['content-type'] || '';
+        if (typeof response.data === 'string' || !contentType.includes('application/json')) {
+            throw new Error(`Respuesta no válida del servidor (no es JSON).`);
+        }
         return response.data;
     } catch (error: any) {
         if (error.response?.status === 401) {
@@ -107,7 +111,7 @@ export async function getAppointments(
 ): Promise<Appointment[]> {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await request<any>(`/appointments${query}`, { method: 'GET' }, token);
+    const res = await request<any>(`/api/v1/appointments${query}`, { method: 'GET' }, token);
     return extractAppointmentArray(res);
 }
 
@@ -115,7 +119,7 @@ export async function getAppointmentById(
     id: string,
     token?: string
 ): Promise<Appointment | null> {
-    const res = await request<AppointmentResponse>(`/appointments/${id}`, { method: 'GET' }, token);
+    const res = await request<AppointmentResponse>(`/api/v1/appointments/${id}`, { method: 'GET' }, token);
     return res.data ?? null;
 }
 
@@ -128,7 +132,7 @@ export async function createAppointment(
     }
     try {
         return await request<AppointmentResponse>(
-            '/appointments',
+            '/api/v1/appointments',
             { method: 'POST', body: JSON.stringify(payload) },
             token
         );
@@ -145,14 +149,14 @@ export async function updateAppointment(
     token?: string
 ): Promise<AppointmentResponse> {
     return request<AppointmentResponse>(
-        `/appointments/${id}`,
+        `/api/v1/appointments/${id}`,
         { method: 'PUT', body: JSON.stringify(payload) },
         token
     );
 }
 
 export async function deleteAppointment(id: string, token?: string): Promise<void> {
-    await request<unknown>(`/appointments/${id}`, { method: 'DELETE' }, token);
+    await request<unknown>(`/api/v1/appointments/${id}`, { method: 'DELETE' }, token);
 }
 
 export async function changeAppointmentStatus(
@@ -164,7 +168,7 @@ export async function changeAppointmentStatus(
     const body: AppointmentStatusRequest = { status };
     if (cancelledReason) body.cancelled_reason = cancelledReason;
     return request<AppointmentResponse>(
-        `/appointments/${id}/status`,
+        `/api/v1/appointments/${id}/status`,
         { method: 'PATCH', body: JSON.stringify(body) },
         token
     );
@@ -179,7 +183,7 @@ export async function getAvailability(
     const params = new URLSearchParams({ clinic_id: clinicId, date });
     if (veterinarianId) params.set('veterinarian_id', veterinarianId);
     const res = await request<AvailabilityResponse>(
-        `/appointments/availability?${params.toString()}`,
+        `/api/v1/appointments/availability?${params.toString()}`,
         { method: 'GET' },
         token
     );
@@ -201,12 +205,12 @@ function extractScheduleArray(res: any): ClinicSchedule[] {
 }
 
 export async function getSchedules(clinicId: string, token?: string): Promise<ClinicSchedule[]> {
-    const res = await request<ScheduleListResponse>(`/schedules/${clinicId}`, { method: 'GET' }, token);
+    const res = await request<ScheduleListResponse>(`/api/v1/schedules/${clinicId}`, { method: 'GET' }, token);
     return extractScheduleArray(res);
 }
 
 export async function createSchedule(payload: ScheduleRequest, token?: string): Promise<ScheduleResponse> {
-    return request<ScheduleResponse>('/schedules', { method: 'POST', body: JSON.stringify(payload) }, token);
+    return request<ScheduleResponse>('/api/v1/schedules', { method: 'POST', body: JSON.stringify(payload) }, token);
 }
 
 export async function updateSchedule(
@@ -215,14 +219,14 @@ export async function updateSchedule(
     token?: string
 ): Promise<ScheduleResponse> {
     return request<ScheduleResponse>(
-        `/schedules/${id}`,
+        `/api/v1/schedules/${id}`,
         { method: 'PUT', body: JSON.stringify(payload) },
         token
     );
 }
 
 export async function deleteSchedule(id: string, token?: string): Promise<void> {
-    await request<unknown>(`/schedules/${id}`, { method: 'DELETE' }, token);
+    await request<unknown>(`/api/v1/schedules/${id}`, { method: 'DELETE' }, token);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -244,7 +248,7 @@ function extractVetBlockArray(res: any): VetBlock[] {
 }
 
 export async function getVetBlocks(clinicId: string, token?: string): Promise<VetBlock[]> {
-    const res = await request<VetBlockListResponse>(`/vetblocks/${clinicId}`, { method: 'GET' }, token);
+    const res = await request<VetBlockListResponse>(`/api/v1/vetblocks/${clinicId}`, { method: 'GET' }, token);
     return extractVetBlockArray(res);
 }
 
@@ -254,7 +258,7 @@ export async function createVetBlock(payload: VetBlockRequest, token?: string): 
         day_of_week: typeof payload.day_of_week === 'string' ? DAY_OF_WEEK_MAP[payload.day_of_week] : payload.day_of_week,
         slot_duration: payload.slot_duration_minutes
     };
-    return request<VetBlockResponse>('/vetblocks', { method: 'POST', body: JSON.stringify(mappedPayload) }, token);
+    return request<VetBlockResponse>('/api/v1/vetblocks', { method: 'POST', body: JSON.stringify(mappedPayload) }, token);
 }
 
 export async function updateVetBlock(
@@ -271,14 +275,14 @@ export async function updateVetBlock(
         mappedPayload.slot_duration = payload.slot_duration_minutes;
     }
     return request<VetBlockResponse>(
-        `/vetblocks/${id}`,
+        `/api/v1/vetblocks/${id}`,
         { method: 'PUT', body: JSON.stringify(mappedPayload) },
         token
     );
 }
 
 export async function deleteVetBlock(id: string, token?: string): Promise<void> {
-    await request<unknown>(`/vetblocks/${id}`, { method: 'DELETE' }, token);
+    await request<unknown>(`/api/v1/vetblocks/${id}`, { method: 'DELETE' }, token);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -294,7 +298,7 @@ function extractWaitlistArray(res: any): WaitlistEntry[] {
 }
 
 export async function getWaitlist(clinicId: string, token?: string): Promise<WaitlistEntry[]> {
-    const res = await request<WaitlistListResponse>(`/waitlist/${clinicId}`, { method: 'GET' }, token);
+    const res = await request<WaitlistListResponse>(`/api/v1/waitlist/${clinicId}`, { method: 'GET' }, token);
     return extractWaitlistArray(res);
 }
 
@@ -303,7 +307,7 @@ export async function updateWaitlistStatus(
     status: string,
     token?: string
 ): Promise<void> {
-    await request<unknown>(`/waitlist/${id}/status`, {
+    await request<unknown>(`/api/v1/waitlist/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
     }, token);

@@ -1,7 +1,7 @@
 import type { Pet, PetRequest, PetResponse, PetListResponse } from '@/types';
 
 // ─── URL base del API Gateway ─────────────────────────────────────────────────
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ─── Helper fetch ─────────────────────────────────────────────────────────────
 async function request<T>(
@@ -19,7 +19,12 @@ async function request<T>(
         },
     };
     const response = await fetch(url, config);
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
+    }
     if (!response.ok) {
         throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
     }
@@ -27,9 +32,9 @@ async function request<T>(
 }
 
 // ─── Obtener todas las mascotas del usuario autenticado ───────────────────────
-// GET /api/pets
+// GET /api/v1/pets
 export async function getPets(token: string): Promise<Pet[]> {
-    const res = await request<PetListResponse>('/pets', { method: 'GET' }, token);
+    const res = await request<PetListResponse>('/api/v1/pets', { method: 'GET' }, token);
     // Soporta array plano o { data: [] }
     if (Array.isArray(res)) return res;
     if (Array.isArray(res.data)) return res.data;
@@ -37,55 +42,55 @@ export async function getPets(token: string): Promise<Pet[]> {
 }
 
 // ─── Obtener una mascota por ID ───────────────────────────────────────────────
-// GET /api/pets/:id
+// GET /api/v1/pets/:id
 export async function getPetById(id: string, token: string): Promise<Pet | null> {
-    const res = await request<PetResponse>(`/pets/${id}`, { method: 'GET' }, token);
+    const res = await request<PetResponse>(`/api/v1/pets/${id}`, { method: 'GET' }, token);
     return res.data ?? null;
 }
 
 // ─── Crear una nueva mascota ──────────────────────────────────────────────────
-// POST /api/pets
+// POST /api/v1/pets
 export async function createPet(payload: PetRequest, token: string): Promise<PetResponse> {
-    return request<PetResponse>('/pets', {
+    return request<PetResponse>('/api/v1/pets', {
         method: 'POST',
         body: JSON.stringify(payload),
     }, token);
 }
 
 // ─── Actualizar una mascota ───────────────────────────────────────────────────
-// PUT /api/pets/:id
+// PUT /api/v1/pets/:id
 export async function updatePet(id: string, payload: Partial<PetRequest>, token: string): Promise<PetResponse> {
-    return request<PetResponse>(`/pets/${id}`, {
+    return request<PetResponse>(`/api/v1/pets/${id}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
     }, token);
 }
 
 // ─── Eliminar una mascota ─────────────────────────────────────────────────────
-// DELETE /api/pets/:id
+// DELETE /api/v1/pets/:id
 export async function deletePet(id: string, token: string): Promise<{ success: boolean; message?: string }> {
-    return request(`/pets/${id}`, { method: 'DELETE' }, token);
+    return request(`/api/v1/pets/${id}`, { method: 'DELETE' }, token);
 }
 
 // ─── Agregar co-dueño a una mascota ──────────────────────────────────────────
-// POST /api/pets/:id/owners
+// POST /api/v1/pets/:id/owners
 export async function addPetOwner(
     petId: string,
     email: string,
     token: string
 ): Promise<{ success: boolean; message?: string }> {
-    return request(`/pets/${petId}/owners`, {
+    return request(`/api/v1/pets/${petId}/owners`, {
         method: 'POST',
         body: JSON.stringify({ email }),
     }, token);
 }
 
 // ─── Obtener dueños de una mascota ────────────────────────────────────────────
-// GET /api/pets/:id/owners
+// GET /api/v1/pets/:id/owners
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function getPetOwners(petId: string, token: string): Promise<any[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await request<any>(`/pets/${petId}/owners`, { method: 'GET' }, token);
+    const res = await request<any>(`/api/v1/pets/${petId}/owners`, { method: 'GET' }, token);
     if (Array.isArray(res)) return res;
     if (Array.isArray(res?.data)) return res.data;
     if (Array.isArray(res?.data?.owners)) return res.data.owners;
@@ -93,32 +98,32 @@ export async function getPetOwners(petId: string, token: string): Promise<any[]>
 }
 
 // ─── Eliminar co-dueño de una mascota ────────────────────────────────────────
-// DELETE /api/pets/:petId/owners/:ownerId
+// DELETE /api/v1/pets/:petId/owners/:ownerId
 export async function removePetOwner(
     petId: string,
     ownerId: string,
     token: string
 ): Promise<{ success: boolean; message?: string }> {
-    return request(`/pets/${petId}/owners/${ownerId}`, { method: 'DELETE' }, token);
+    return request(`/api/v1/pets/${petId}/owners/${ownerId}`, { method: 'DELETE' }, token);
 }
 
 // ─── Obtener mascotas de la clínica autenticada ───────────────────────────────
-// GET /pets/clinic
+// GET /api/v1/pets/clinic
 export async function getPetsByClinic(token: string): Promise<Pet[]> {
-    const res = await request<PetListResponse>('/pets/clinic', { method: 'GET' }, token);
+    const res = await request<PetListResponse>('/api/v1/pets/clinic', { method: 'GET' }, token);
     if (Array.isArray(res)) return res;
     if (Array.isArray((res as PetListResponse).data)) return (res as PetListResponse).data!;
     return [];
 }
 
 // ─── Subir / actualizar foto de mascota ───────────────────────────────────────
-// POST /pets/:id/photo  (multipart/form-data, campo "photo")
+// POST /api/v1/pets/:id/photo  (multipart/form-data, campo "photo")
 export async function uploadPetPhoto(
     petId: string,
     file: File,
     token: string,
 ): Promise<{ photo_url: string }> {
-    const url = `${BASE_URL}/pets/${petId}/photo`;
+    const url = `${BASE_URL}/api/v1/pets/${petId}/photo`;
     const formData = new FormData();
     formData.append('photo', file);
 
@@ -129,7 +134,13 @@ export async function uploadPetPhoto(
         body: formData,
     });
 
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
+    }
+    
     if (!response.ok) {
         throw new Error(data.message || `Error ${response.status}`);
     }

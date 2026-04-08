@@ -10,7 +10,7 @@ import type {
 import { getToken } from '@/utils/auth';
 
 // ─── URL base del API Gateway ─────────────────────────────────────────────────
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ─── Helper fetch ─────────────────────────────────────────────────────────────
 async function request<T>(
@@ -29,7 +29,12 @@ async function request<T>(
         cache: 'no-store',
     };
     const response = await fetch(url, config);
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
+    }
     if (!response.ok) {
         throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
     }
@@ -49,20 +54,20 @@ export function extractStaffArray(res: any): StaffMember[] {
 }
 
 // ─── Registro de Clínica Veterinaria ─────────────────────────────────────────
-// POST /api/clinics/register
+// POST /api/v1/clinics/register
 export async function registerClinic(payload: ClinicRegisterRequest): Promise<ClinicResponse> {
-    return request<ClinicResponse>('/clinics/register', {
+    return request<ClinicResponse>('/api/v1/clinics/register', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
 }
 
 // ─── Obtener listado de clínicas (requiere JWT) ────────────────────────────────
-// GET /api/clinics
+// GET /api/v1/clinics
 // Normaliza: { data: { clinics: [] } } | { data: [] } | array plano
 export async function getClinics(tokenArg?: string): Promise<Clinic[]> {
     const jwt = tokenArg ?? getToken();
-    const url = `${BASE_URL}/clinics`;
+    const url = `${BASE_URL}/api/v1/clinics`;
     const res = await fetch(url, {
         headers: {
             'Content-Type': 'application/json',
@@ -91,13 +96,13 @@ export async function getClinics(tokenArg?: string): Promise<Clinic[]> {
 }
 
 // ─── Agregar Veterinario (requiere token de clínica) ─────────────────────────
-// POST /api/users/veterinarians
+// POST /api/v1/users/veterinarians
 export async function addVeterinarian(
     payload: VeterinarianRequest,
     token: string
 ): Promise<BaseResponse> {
     return request<BaseResponse>(
-        '/users/veterinarians',
+        '/api/v1/users/veterinarians',
         {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -107,16 +112,16 @@ export async function addVeterinarian(
 }
 
 // ─── Obtener detalle de una clínica ──────────────────────────────────────────
-// GET /api/clinics/:id
+// GET /api/v1/clinics/:id
 export async function getClinic(id: string, token?: string): Promise<ClinicDetailResponse> {
-    return request<ClinicDetailResponse>(`/clinics/${id}`, { method: 'GET' }, token);
+    return request<ClinicDetailResponse>(`/api/v1/clinics/${id}`, { method: 'GET' }, token);
 }
 
 // ─── Obtener personal de una clínica ─────────────────────────────────────────
-// GET /api/clinics/:id/staff  →  devuelve StaffMember[] ya normalizado
+// GET /api/v1/clinics/:id/staff  →  devuelve StaffMember[] ya normalizado
 export async function getClinicStaff(id: string, token?: string): Promise<StaffMember[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await request<any>(`/clinics/${id}/staff`, { method: 'GET' }, token);
+    const res = await request<any>(`/api/v1/clinics/${id}/staff`, { method: 'GET' }, token);
 
     const staffArray = extractStaffArray(res);
 
@@ -124,7 +129,7 @@ export async function getClinicStaff(id: string, token?: string): Promise<StaffM
 }
 
 // ─── Actualizar datos de una clínica ─────────────────────────────────────────
-// PUT /api/clinics/:id
+// PUT /api/v1/clinics/:id
 export interface UpdateClinicPayload {
     clinic_name?: string;
     address?: string;
@@ -141,7 +146,7 @@ export async function updateClinic(
     token: string
 ): Promise<ClinicDetailResponse> {
     return request<ClinicDetailResponse>(
-        `/clinics/${id}`,
+        `/api/v1/clinics/${id}`,
         {
             method: 'PUT',
             body: JSON.stringify(payload),
@@ -151,7 +156,7 @@ export async function updateClinic(
 }
 
 // ─── Subir logo de clínica ───────────────────────────────────────────────────
-// POST /api/clinics/:id/logo
+// POST /api/v1/clinics/:id/logo
 export async function uploadClinicLogo(
     id: string,
     token: string,
@@ -160,7 +165,7 @@ export async function uploadClinicLogo(
     const formData = new FormData();
     formData.append('logo', file);
 
-    const url = `${BASE_URL}/clinics/${id}/logo`;
+    const url = `${BASE_URL}/api/v1/clinics/${id}/logo`;
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -169,7 +174,12 @@ export async function uploadClinicLogo(
         body: formData,
     });
     
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
+    }
     if (!response.ok) {
         throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
     }
