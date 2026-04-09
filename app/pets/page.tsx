@@ -9,7 +9,7 @@ import { getToken } from '@/utils/auth';
 import { getPets, deletePet } from '@/services/petService';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { PetsGridSkeleton } from '@/components/ui/SkeletonLoader';
 import type { Pet } from '@/types';
 
 // ─── Diccionarios de Traducción ───────────────────────────────────────────────
@@ -217,24 +217,33 @@ export default function PetsPage() {
 
     const handleDelete = (id: string) => setPets(prev => prev.filter(p => p.id !== id));
 
-    if (authLoading || loading) {
+    if (authLoading) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-                <LoadingSpinner size={52} text="Cargando mascotas..." />
+            <div className="page-wrapper">
+                <div className="page-container">
+                    <PetsGridSkeleton count={6} />
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-petwell-light/30 px-4 py-10">
+        <div className="page-wrapper">
             <div className="max-w-5xl mx-auto space-y-8">
 
                 {/* Encabezado */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-extrabold text-petwell-navy">
-                            Mis <span className="text-gradient-petwell">Mascotas</span>
-                        </h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl sm:text-3xl font-extrabold text-petwell-navy">
+                                Mis <span className="text-gradient-petwell">Mascotas</span>
+                            </h1>
+                            {!loading && pets.length > 0 && (
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-petwell-teal/15 text-petwell-teal text-xs font-bold">
+                                    {pets.length}
+                                </span>
+                            )}
+                        </div>
                         <p className="text-gray-500 text-sm mt-1">Gestiona el perfil de salud de tus compañeros.</p>
                     </div>
                     <Link href="/pets/add">
@@ -253,19 +262,28 @@ export default function PetsPage() {
                 )}
 
                 {/* Grid de mascotas */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {pets.length === 0 && !error
-                        ? <EmptyState />
-                        : pets.map(pet => (
-                            <PetCard key={pet.id} pet={pet} onDelete={handleDelete} />
-                        ))
-                    }
-                </div>
+                {loading ? (
+                    <div className="animate-fade-in">
+                        <PetsGridSkeleton count={6} />
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {pets.length === 0 && !error
+                            ? <EmptyState />
+                            : pets.map(pet => (
+                                <PetCard key={pet.id} pet={pet} onDelete={handleDelete} />
+                            ))
+                        }
+                    </div>
+                )}
 
                 {/* Volver */}
                 <div className="pt-2">
-                    <Link href="/dashboard" className="text-sm text-petwell-blue hover:text-petwell-teal transition-colors font-medium">
-                        ← Volver al panel
+                    <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-petwell-blue hover:text-petwell-teal transition-colors font-medium">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Volver al panel
                     </Link>
                 </div>
             </div>

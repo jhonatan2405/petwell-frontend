@@ -58,10 +58,10 @@ export default function Navbar() {
 
     return (
         <header className="bg-petwell-navy shadow-sm sticky top-0 z-50 transition-all duration-200" role="navigation" aria-label="Navegación principal">
-            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                
-                {/* 1. Izquierda: Logo */}
-                <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
+            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 relative flex items-center">
+
+                {/* 1. Izquierda: Logo — posición fija izquierda */}
+                <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2.5 group flex-shrink-0">
                     <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden group-hover:ring-2 group-hover:ring-petwell-teal transition-all duration-200">
                         <Image
                             src="/logo.png"
@@ -77,8 +77,8 @@ export default function Navbar() {
                     </span>
                 </Link>
 
-                {/* 2. Centro: Navegación Principal (Desktop) */}
-                <div className="hidden md:flex items-center gap-7">
+                {/* 2. Centro: Navegación Principal — absolutamente centrado en la pantalla */}
+                <div className="hidden md:flex items-center gap-7 absolute left-1/2 -translate-x-1/2">
                     {isAuthenticated && (
                         <>
                             {navLink('/dashboard', 'Mi Panel')}
@@ -113,8 +113,8 @@ export default function Navbar() {
                     )}
                 </div>
 
-                {/* 3. Derecha: Acciones de usuario (Desktop) */}
-                <div className="hidden md:flex items-center gap-3 relative">
+                {/* 3. Derecha: Acciones de usuario — posición fija derecha */}
+                <div className="hidden md:flex items-center gap-3 relative ml-auto flex-shrink-0">
                     {isAuthenticated ? (
                         <div className="relative" ref={dropdownRef}>
                             <button 
@@ -204,7 +204,7 @@ export default function Navbar() {
 
                 {/* Botón menú móvil */}
                 <button
-                    className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors ml-auto flex-shrink-0"
                     onClick={() => setMenuOpen(!menuOpen)}
                     aria-label="Abrir menú"
                     aria-expanded={menuOpen}

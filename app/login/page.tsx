@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { login } from '@/services/api';
 import { useAuthContext } from '@/context/AuthContext';
@@ -61,22 +62,52 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12 bg-petwell-light/30">
-            <div className="w-full max-w-md">
-                {/* Encabezado */}
+        <div className="login-bg min-h-[calc(100vh-4rem)] relative flex items-center justify-center px-4 py-12 overflow-hidden">
+
+            {/* Decorative blobs */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-petwell-teal/8 blur-3xl" />
+                <div className="absolute -bottom-32 -left-32 w-[440px] h-[440px] rounded-full bg-petwell-blue/8 blur-3xl" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-petwell-light/60 blur-2xl" />
+            </div>
+
+            {/* Decorative dot grid */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle, rgba(46,134,193,0.06) 1px, transparent 1px)',
+                    backgroundSize: '32px 32px',
+                }}
+            />
+
+            <div className="relative w-full max-w-md">
+
+                {/* ── Logo + header ─────────────────────────────────────────────── */}
                 <div className="text-center mb-8 animate-fade-in">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-petwell-blue rounded-2xl shadow-lg mb-5">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                        </svg>
+                    <div className="inline-flex items-center justify-center mb-5">
+                        <div className="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center p-2 ring-1 ring-petwell-blue/10">
+                            <Image
+                                src="/logo.png"
+                                alt="Logo PetWell"
+                                width={64}
+                                height={64}
+                                className="object-contain"
+                                priority
+                            />
+                        </div>
                     </div>
-                    <h1 className="text-3xl font-extrabold text-petwell-navy">Iniciar sesión</h1>
-                    <p className="text-gray-500 mt-2 text-sm">Accede a tu cuenta PetWell</p>
+                    <h1 className="text-3xl font-extrabold text-petwell-navy">
+                        Bienvenido a <span className="text-gradient-petwell">PetWell</span>
+                    </h1>
+                    <p className="text-gray-500 mt-2 text-sm">
+                        Ingresa tus credenciales para continuar
+                    </p>
                 </div>
 
-                {/* Tarjeta */}
-                <div className="card-glass p-8 animate-slide-up">
+                {/* ── Card ──────────────────────────────────────────────────────── */}
+                <div className="card-glass p-8 animate-slide-up shadow-xl">
+
                     {form.error && (
                         <div className="mb-5">
                             <Alert type="error" message={form.error} onClose={() => setForm(f => ({ ...f, error: null }))} />
@@ -109,7 +140,7 @@ export default function LoginPage() {
                             id="login-password"
                             label="Contraseña"
                             type="password"
-                            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                            placeholder="••••••••"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             error={errors.password}
@@ -122,7 +153,7 @@ export default function LoginPage() {
                             }
                         />
 
-                        {/* Link olvide contraseña */}
+                        {/* Olvidé contraseña */}
                         <div className="flex justify-end -mt-2">
                             <Link
                                 href="/forgot-password"
@@ -139,7 +170,7 @@ export default function LoginPage() {
                             loading={form.loading}
                             disabled={form.loading}
                         >
-                            {form.loading ? 'Verificando...' : 'Iniciar sesión'}
+                            {form.loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
                         </Button>
                     </form>
 
@@ -152,8 +183,12 @@ export default function LoginPage() {
                         </p>
                     </div>
                 </div>
+
+                {/* Footer note */}
+                <p className="text-center text-xs text-gray-400 mt-6 animate-fade-in">
+                    Tu información está protegida con cifrado SSL
+                </p>
             </div>
         </div>
     );
 }
-

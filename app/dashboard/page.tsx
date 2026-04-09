@@ -39,6 +39,13 @@ function formatDate(dateStr: string): string {
     });
 }
 
+function getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Buenos días';
+    if (hour < 18) return 'Buenas tardes';
+    return 'Buenas noches';
+}
+
 // ─── Render de Dashboard por Rol (SWITCH OBLIGATORIO) ─────────────────────────
 function RoleDashboard({ role }: { role: string }) {
     switch (role) {
@@ -110,21 +117,25 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-petwell-light/30 px-4 py-10">
+        <div className="page-wrapper">
             <div className="max-w-4xl mx-auto space-y-8">
 
                 {/* ── Bienvenida ─────────────────────────────────────────────────── */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
                     <div>
+                        <p className="text-sm font-medium text-petwell-teal mb-0.5">{getGreeting()} 👋</p>
                         <h1 className="text-2xl sm:text-3xl font-extrabold text-petwell-navy">
-                            ¡Bienvenido, <span className="text-gradient-petwell">{user.name.split(' ')[0]}</span>!
+                            <span className="text-gradient-petwell">{user.name.split(' ')[0]}</span>, bienvenido
                         </h1>
-                        <p className="text-gray-500 text-sm mt-1">Esto es lo que está pasando en tu cuenta hoy.</p>
+                        <p className="text-gray-400 text-sm mt-1">Esto es lo que está pasando en tu cuenta hoy.</p>
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="text-sm text-gray-400 hover:text-red-500 transition-colors font-medium"
+                        className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-red-500 transition-colors font-medium border border-gray-200 hover:border-red-200 hover:bg-red-50 px-4 py-2 rounded-xl"
                     >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
                         Cerrar sesión
                     </button>
                 </div>

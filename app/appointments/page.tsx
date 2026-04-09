@@ -9,7 +9,7 @@ import type { Appointment, AppointmentStatus } from '@/types';
 import AppointmentCard from '@/components/appointments/AppointmentCard';
 import CancelModal from '@/components/appointments/CancelModal';
 import { Toast, useToast, friendlyError } from '@/components/appointments/Toast';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { AppointmentsGridSkeleton } from '@/components/ui/SkeletonLoader';
 
 const STATUS_OPTIONS: { value: AppointmentStatus | 'ALL'; label: string }[] = [
     { value: 'ALL', label: 'Todos los estados' },
@@ -76,31 +76,35 @@ export default function OwnerAppointmentsPage() {
     };
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-petwell-light via-white to-blue-50 py-8 px-4">
-            <div className="max-w-4xl mx-auto">
+        <main className="page-wrapper">
+            <div className="page-container">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+                <div className="flex items-center justify-between mb-8 flex-wrap gap-4 animate-fade-in">
                     <div>
-                        <h1 className="text-2xl font-bold text-petwell-navy">📅 Mis Citas</h1>
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-petwell-navy">
+                            Mis <span className="text-gradient-petwell">Citas</span>
+                        </h1>
                         <p className="text-gray-500 text-sm mt-1">
                             Gestiona tus citas veterinarias
                         </p>
                     </div>
                     <Link
                         href="/appointments/new"
-                        className="inline-flex items-center gap-2 bg-petwell-blue text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-petwell-navy transition-colors shadow-md"
+                        className="inline-flex items-center gap-2 bg-petwell-blue text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-petwell-navy transition-all duration-200 shadow-md hover:shadow-lg"
                     >
-                        <span>+</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
                         Agendar nueva cita
                     </Link>
                 </div>
 
                 {/* Filters */}
-                <div className="card-glass p-4 rounded-2xl mb-6 flex flex-wrap gap-3">
+                <div className="card-glass p-4 rounded-2xl mb-6 flex flex-wrap gap-3 animate-fade-in">
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value as AppointmentStatus | 'ALL')}
-                        className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-petwell-navy focus:outline-none focus:ring-2 focus:ring-petwell-blue"
+                        className="border-2 border-gray-200 rounded-xl px-3 py-2 text-sm text-petwell-navy bg-white focus:outline-none focus:ring-2 focus:ring-petwell-blue/30 focus:border-petwell-blue hover:border-petwell-blue/50 transition-all duration-200 cursor-pointer"
                     >
                         {STATUS_OPTIONS.map((o) => (
                             <option key={o.value} value={o.value}>
@@ -112,13 +116,16 @@ export default function OwnerAppointmentsPage() {
                         type="date"
                         value={filterDate}
                         onChange={(e) => setFilterDate(e.target.value)}
-                        className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-petwell-navy focus:outline-none focus:ring-2 focus:ring-petwell-blue"
+                        className="border-2 border-gray-200 rounded-xl px-3 py-2 text-sm text-petwell-navy bg-white focus:outline-none focus:ring-2 focus:ring-petwell-blue/30 focus:border-petwell-blue hover:border-petwell-blue/50 transition-all duration-200 cursor-pointer"
                     />
                     {(filterStatus !== 'ALL' || filterDate) && (
                         <button
                             onClick={() => { setFilterStatus('ALL'); setFilterDate(''); }}
-                            className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-red-500 transition-colors px-2 rounded-lg hover:bg-red-50 py-1"
                         >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                             Limpiar filtros
                         </button>
                     )}
@@ -126,8 +133,8 @@ export default function OwnerAppointmentsPage() {
 
                 {/* Content */}
                 {loading ? (
-                    <div className="flex justify-center py-20">
-                        <LoadingSpinner size={48} text="Cargando tus citas..." />
+                    <div className="animate-fade-in">
+                        <AppointmentsGridSkeleton count={4} />
                     </div>
                 ) : filtered.length === 0 ? (
                     <div className="text-center py-20 animate-fade-in">
