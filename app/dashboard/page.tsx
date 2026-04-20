@@ -9,6 +9,7 @@ import OwnerDashboard from '@/components/dashboard/OwnerDashboard';
 import ClinicAdminDashboard from '@/components/dashboard/ClinicAdminDashboard';
 import VeterinarianDashboard from '@/components/dashboard/VeterinarianDashboard';
 import ReceptionistDashboard from '@/components/dashboard/ReceptionistDashboard';
+import AdminDashboard from '@/components/dashboard/AdminDashboard';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getRolLabel(role: string): string {
@@ -49,6 +50,8 @@ function getGreeting(): string {
 // ─── Render de Dashboard por Rol (SWITCH OBLIGATORIO) ─────────────────────────
 function RoleDashboard({ role }: { role: string }) {
     switch (role) {
+        case 'ADMIN':
+            return <AdminDashboard />;
         case 'DUENO_MASCOTA':
             return <OwnerDashboard />;
         case 'CLINIC_ADMIN':

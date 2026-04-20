@@ -38,21 +38,25 @@ export default function OwnerAppointmentsPage() {
     const [filterDate, setFilterDate] = useState('');
     const [cancelId, setCancelId] = useState<string | null>(null);
 
-    const load = useCallback(async () => {
+    const load = useCallback(async (silent = false) => {
         if (!token) return;
-        setLoading(true);
+        if (!silent) setLoading(true);
         try {
             const data = await getAppointments(token);
             setAppointments(data);
         } catch (err) {
-            toastError(friendlyError(err));
+            if (!silent) toastError(friendlyError(err));
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         load();
+        
+        // Polling silencioso cada 5 segundos para reflejar pagos tras la confirmación automática (Webhooks Bold)
+        const interval = setInterval(() => load(true), 5000);
+        return () => clearInterval(interval);
     }, [load]);
 
     // ─── Filter ──────────────────────────────────────────────────────────────

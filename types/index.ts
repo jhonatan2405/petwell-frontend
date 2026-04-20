@@ -357,7 +357,7 @@ export interface EhrConsentResponse {
 
 // ─── Módulo de Citas (Appointment Service) ───────────────────────────────────
 
-export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW';
+export type AppointmentStatus = 'PENDING' | 'PENDING_PAYMENT' | 'PROCESSING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW';
 export type AppointmentType = 'PRESENCIAL' | 'TELEMEDICINA';
 export type AppointmentReasonType = 'CONSULTA' | 'VACUNACION' | 'URGENCIA';
 
@@ -545,4 +545,151 @@ export interface WaitlistListResponse {
     success: boolean;
     message?: string;
     data?: WaitlistEntry[];
+}
+
+// ─── Telemedicina (Telemed Service) ──────────────────────────────────────────
+
+export type TelemedSessionStatus = 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export interface TelemedSession {
+    id: string;
+    appointment_id: string;
+    room_url: string;      // URL de la videollamada
+    room_id?: string;
+    status: TelemedSessionStatus;
+    started_at?: string | null;
+    ended_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface TelemedSessionResponse {
+    success: boolean;
+    message?: string;
+    data?: TelemedSession;
+}
+
+// ─── Notificaciones (Notification Service) ───────────────────────────────────
+
+export type NotificationType = 'APPOINTMENT_REMINDER' | 'TELEMED' | 'SYSTEM' | string;
+
+export interface UserNotification {
+    id: string;
+    user_id: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    is_read: boolean;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface NotificationResponse {
+    success: boolean;
+    message?: string;
+    data?: UserNotification;
+}
+
+export interface NotificationListResponse {
+    success: boolean;
+    message?: string;
+    data?: UserNotification[];
+}
+
+// ─── Facturación (Billing Service) ────────────────────────────────────────
+
+export type InvoiceStatus = 'DRAFT' | 'PENDING_PAYMENT' | 'PAID' | 'CANCELLED';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
+
+export interface Invoice {
+    id: string;
+    clinic_id: string;
+    owner_id: string;
+    appointment_id?: string | null;
+    total_amount: number;
+    status: InvoiceStatus;
+    description?: string | null;
+    reference?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Payment {
+    id: string;
+    invoice_id: string;
+    provider: string;
+    transaction_id?: string | null;
+    reference?: string | null;
+    amount: number;
+    currency: string;
+    status: PaymentStatus;
+    created_at: string;
+}
+
+export interface ClinicPricing {
+    id?: string;
+    clinic_id: string;
+    price_consulta: number;
+    price_telemedicina: number;
+    price_urgencia: number;
+    price_vacunacion: number;
+    updated_at?: string;
+}
+
+export interface InvoiceListResponse {
+    success: boolean;
+    message?: string;
+    data?: Invoice[];
+}
+
+export interface InvoiceResponse {
+    success: boolean;
+    message?: string;
+    data?: Invoice;
+}
+
+export interface ClinicPricingResponse {
+    success: boolean;
+    message?: string;
+    data?: ClinicPricing;
+}
+
+export interface InitPaymentResponse {
+    success: boolean;
+    message?: string;
+    data?: { redirect_url: string; reference: string };
+}
+
+// ─── Analytics (Analytics Service) ──────────────────────────────────────────
+
+export interface AnalyticsGlobal {
+    total_clinics: number;
+    total_pets: number;
+    total_appointments: number;
+    total_revenue: number;
+    appointments_by_status: Record<string, number>;
+    appointments_by_type: Record<string, number>;
+    telemed_usage_rate: string;
+}
+
+export interface AnalyticsClinic {
+    clinic_id: string;
+    total_appointments: number;
+    completed: number;
+    confirmed: number;
+    cancelled: number;
+    no_show: number;
+    pending: number;
+    pending_payment: number;
+    appointments_by_type: Record<string, number>;
+    revenue_total: number;
+    revenue_paid: number;
+    occupancy_rate: string;
+    telemed_usage_rate: string;
+}
+
+export interface AnalyticsResponse<T> {
+    success: boolean;
+    message: string;
+    data?: T;
 }

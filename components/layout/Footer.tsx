@@ -1,6 +1,14 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Footer() {
+    const pathname = usePathname();
+    if (pathname === '/auth' || pathname === '/verify-account') {
+        return null;
+    }
+    
     return (
         <footer className="bg-petwell-navy text-white mt-auto">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

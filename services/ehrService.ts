@@ -10,8 +10,7 @@ import type {
     VaccinationListResponse,
 } from '@/types';
 
-
-// ─── URL base del API Gateway ─────────────────────────────────────────────────
+// BASE_URL ya incluye /api/v1 (definido en .env.local)
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ─── Helper fetch con JWT automático ─────────────────────────────────────────
@@ -20,7 +19,11 @@ async function request<T>(
     options: RequestInit = {},
     token?: string
 ): Promise<T> {
-    const url = `${BASE_URL}${endpoint}`;
+    const cleanEndpoint = endpoint.replace(/^\/+/, '');
+    const url = `${BASE_URL}/${cleanEndpoint}`;
+
+    console.log('🌐 Request URL:', url);
+
     const config: RequestInit = {
         ...options,
         headers: {
@@ -33,7 +36,7 @@ async function request<T>(
     let data;
     try {
         data = await response.json();
-    } catch (e) {
+    } catch {
         throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
     }
     if (!response.ok) {
@@ -46,86 +49,78 @@ async function request<T>(
 // CRUD DE REGISTROS CLÍNICOS
 // ════════════════════════════════════════════════════════════════════════════════
 
-// GET /api/v1/ehr/pet/:petId
 export async function getEhrByPet(petId: string, token: string): Promise<EhrRecord[]> {
-    const res = await request<EhrListResponse>(`/api/v1/ehr/pet/${petId}`, { method: 'GET' }, token);
+    const res = await request<EhrListResponse>(`ehr/pet/${petId}`, { method: 'GET' }, token);
     if (Array.isArray(res)) return res;
     if (Array.isArray(res.data)) return res.data;
     return [];
 }
 
-// GET /api/v1/ehr/:id
 export async function getEhrById(id: string, token: string): Promise<EhrRecord | null> {
-    const res = await request<EhrResponse>(`/api/v1/ehr/${id}`, { method: 'GET' }, token);
+    const res = await request<EhrResponse>(`ehr/${id}`, { method: 'GET' }, token);
     return res.data ?? null;
 }
 
-// POST /api/v1/ehr
 export async function createEhr(
     petId: string,
     payload: EhrRequest,
     token: string
 ): Promise<EhrResponse> {
-    return request<EhrResponse>('/api/v1/ehr', {
+    return request<EhrResponse>('ehr', {
         method: 'POST',
         body: JSON.stringify({ ...payload, pet_id: petId }),
     }, token);
 }
 
-// PUT /api/v1/ehr/:id
 export async function updateEhr(
     id: string,
     payload: Partial<EhrRequest>,
     token: string
 ): Promise<EhrResponse> {
-    return request<EhrResponse>(`/api/v1/ehr/${id}`, {
+    return request<EhrResponse>(`ehr/${id}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
     }, token);
 }
 
-// DELETE /api/v1/ehr/:id
 export async function deleteEhr(
     id: string,
     token: string
 ): Promise<{ success: boolean; message?: string }> {
-    return request(`/api/v1/ehr/${id}`, { method: 'DELETE' }, token);
+    return request(`ehr/${id}`, { method: 'DELETE' }, token);
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// PERMISOS / CONSENTIMIENTO DE CLÍNICAS  (endpoints reales del backend)
+// PERMISOS / CONSENTIMIENTO DE CLÍNICAS
 // ════════════════════════════════════════════════════════════════════════════════
 
-// GET /api/v1/ehr/permissions/:petId → lista de clínicas con permiso
 export async function getPermissions(petId: string, token: string): Promise<EhrConsentResponse> {
-    return request<EhrConsentResponse>(`/api/v1/ehr/permissions/${petId}`, { method: 'GET' }, token);
+    return request<EhrConsentResponse>(`ehr/permissions/${petId}`, { method: 'GET' }, token);
 }
 
-// POST /api/v1/ehr/permissions → otorgar permiso a una clínica
 export async function grantPermission(
     petId: string,
     clinicId: string,
     token: string
 ): Promise<{ success: boolean; message?: string }> {
-    return request(`/api/v1/ehr/permissions`, {
+    return request('ehr/permissions', {
         method: 'POST',
         body: JSON.stringify({ pet_id: petId, clinic_id: clinicId }),
     }, token);
 }
 
-// DELETE /api/v1/ehr/permissions → revocar permiso de una clínica
 export async function revokePermission(
     petId: string,
     clinicId: string,
     token: string
 ): Promise<{ success: boolean; message?: string }> {
-    return request(`/api/v1/ehr/permissions`, {
+    return request('ehr/permissions', {
         method: 'DELETE',
         body: JSON.stringify({ pet_id: petId, clinic_id: clinicId }),
     }, token);
 }
 
-// ─── Aliases de compatibilidad (mantienen el contrato de los componentes previos)
+// ─── Aliases de compatibilidad ─────────────────────────────────────────────────
 export const getClinicConsents = getPermissions;
 export const grantClinicAccess = (petId: string, clinicId: string, token: string) =>
     grantPermission(petId, clinicId, token);
@@ -133,35 +128,31 @@ export const revokeClinicAccess = (petId: string, clinicId: string, token: strin
     revokePermission(petId, clinicId, token);
 
 // ════════════════════════════════════════════════════════════════════════════════
-// AUDITORÍA DE ACCESOS  (endpoint real del backend)
+// AUDITORÍA DE ACCESOS
 // ════════════════════════════════════════════════════════════════════════════════
 
-// GET /api/v1/ehr/audit/:petId → log de auditoría
 export async function getAudit(petId: string, token: string): Promise<EhrAuditResponse> {
-    return request<EhrAuditResponse>(`/api/v1/ehr/audit/${petId}`, { method: 'GET' }, token);
+    return request<EhrAuditResponse>(`ehr/audit/${petId}`, { method: 'GET' }, token);
 }
 
-// ─── Alias de compatibilidad ─────────────────────────────────────────────────
 export const getEhrAuditLog = getAudit;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // VACUNAS
 // ════════════════════════════════════════════════════════════════════════════════
 
-// GET /api/v1/ehr/:petId/vaccinations
 export async function getVaccinations(petId: string, token: string): Promise<Vaccination[]> {
-    const res = await request<VaccinationListResponse>(`/api/v1/ehr/${petId}/vaccinations`, { method: 'GET' }, token);
+    const res = await request<VaccinationListResponse>(`ehr/${petId}/vaccinations`, { method: 'GET' }, token);
     if (Array.isArray(res)) return res;
     if (Array.isArray(res.data)) return res.data;
     return [];
 }
 
-// POST /api/v1/ehr/vaccinations
 export async function createVaccination(
     payload: VaccinationRequest,
     token: string,
 ): Promise<Vaccination> {
-    const res = await request<{ success: boolean; data: Vaccination }>('/api/v1/ehr/vaccinations', {
+    const res = await request<{ success: boolean; data: Vaccination }>('ehr/vaccinations', {
         method: 'POST',
         body: JSON.stringify(payload),
     }, token);
@@ -172,9 +163,10 @@ export async function createVaccination(
 // EXPORTAR PDF
 // ════════════════════════════════════════════════════════════════════════════════
 
-// GET /api/v1/ehr/:petId/export/pdf  → triggers browser file download
 export async function downloadEhrPdf(petId: string, token: string): Promise<void> {
-    const url = `${BASE_URL}/api/v1/ehr/${petId}/export/pdf`;
+    const url = `${BASE_URL}/ehr/${petId}/export/pdf`;
+    console.log('🌐 Request URL:', url);
+
     const response = await fetch(url, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },

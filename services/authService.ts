@@ -1,11 +1,16 @@
 import type { RegisterRequest, LoginRequest, AuthResponse } from '@/types';
 
-// ─── URL base del API Gateway ─────────────────────────────────────────────────
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+// BASE_URL ya incluye /api/v1 (definido en .env.local)
+// NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 // ─── Helper fetch ─────────────────────────────────────────────────────────────
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${BASE_URL}${endpoint}`;
+    const cleanEndpoint = endpoint.replace(/^\/+/, '');
+    const url = `${BASE_URL}/${cleanEndpoint}`;
+
+    console.log('🌐 Request URL:', url);
+
     const config: RequestInit = {
         ...options,
         headers: {
@@ -14,23 +19,25 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         },
     };
     const response = await fetch(url, config);
-    
+
     let data;
     try {
         data = await response.json();
-    } catch (e) {
+    } catch {
         throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
     }
 
     if (!response.ok) {
-        throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
+        const err = new Error(data.message || `Error ${response.status}: ${response.statusText}`) as Error & { status: number };
+        err.status = response.status;
+        throw err;
     }
     return data as T;
 }
 
 // ─── Registro de dueño de mascota ────────────────────────────────────────────
 export async function registerOwner(payload: RegisterRequest): Promise<AuthResponse> {
-    return request<AuthResponse>('/api/v1/auth/register', {
+    return request<AuthResponse>('auth/register', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
@@ -38,9 +45,24 @@ export async function registerOwner(payload: RegisterRequest): Promise<AuthRespo
 
 // ─── Inicio de sesión ─────────────────────────────────────────────────────────
 export async function login(payload: LoginRequest): Promise<AuthResponse> {
-    return request<AuthResponse>('/api/v1/auth/login', {
+    return request<AuthResponse>('auth/login', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
 }
 
+// ─── Verificación de cuenta (2FA) ─────────────────────────────────────────────
+export async function verifyAccount(email: string, code: string): Promise<AuthResponse> {
+    return request<AuthResponse>('auth/verify', {
+        method: 'POST',
+        body: JSON.stringify({ email, code }),
+    });
+}
+
+// ─── Reenviar código de verificación ─────────────────────────────────────────
+export async function resendVerificationCode(email: string): Promise<AuthResponse> {
+    return request<AuthResponse>('auth/resend-code', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+    });
+}

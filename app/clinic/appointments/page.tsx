@@ -11,6 +11,7 @@ import {
 } from '@/services/appointmentService';
 import type { Appointment, AppointmentStatus } from '@/types';
 import StatusBadge from '@/components/appointments/StatusBadge';
+import AppointmentCard from '@/components/appointments/AppointmentCard';
 import CancelModal from '@/components/appointments/CancelModal';
 import { Toast, useToast, friendlyError } from '@/components/appointments/Toast';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -46,6 +47,8 @@ const NEXT_STATUSES: Partial<Record<AppointmentStatus, AppointmentStatus[]>> = {
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
     PENDING: 'Pendiente',
+    PENDING_PAYMENT: 'Pendiente de Pago',
+    PROCESSING_PAYMENT: 'Procesando Pago',
     CONFIRMED: 'Confirmada',
     COMPLETED: 'Completada',
     CANCELLED: 'Cancelada',
@@ -69,9 +72,9 @@ export default function ClinicAppointmentsPage() {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    const load = useCallback(async () => {
+    const load = useCallback(async (silent = false) => {
         if (!token) return;
-        setLoading(true);
+        if (!silent) setLoading(true);
         try {
             const params: Record<string, string> = {};
             // Vets only see their own appointments
@@ -79,13 +82,19 @@ export default function ClinicAppointmentsPage() {
             const data = await getAppointments(token, params);
             setAppointments(data);
         } catch (err) {
-            toastError(friendlyError(err));
+            if (!silent) toastError(friendlyError(err));
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, [token, isVet, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => { 
+        load();
+        
+        // Polling silencioso cada 15 segundos
+        const interval = setInterval(() => load(true), 15000);
+        return () => clearInterval(interval);
+    }, [load]);
 
     // ─── Filters ─────────────────────────────────────────────────────────────
     const filtered = appointments.filter((a) => {
@@ -179,69 +188,25 @@ export default function ClinicAppointmentsPage() {
                         </div>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            {filtered.sort((a, b) => `${a.appointment_date}${a.start_time}` > `${b.appointment_date}${b.start_time}` ? 1 : -1).map((appt) => (
-                                <div key={appt.id} className="card-glass p-4 rounded-2xl flex items-center gap-4 flex-wrap animate-fade-in">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                                            {appt.pet_photo_url ? (
-                                                <div className="w-8 h-8 rounded-full overflow-hidden relative flex-shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
-                                                    <Image src={appt.pet_photo_url} alt="Mascota" fill className="object-cover" unoptimized sizes="32px" />
-                                                </div>
-                                            ) : (
-                                                <span className="text-2xl leading-none flex-shrink-0" title="Mascota sin foto">🐾</span>
-                                            )}
-                                            <span className="font-bold text-petwell-navy">{appt.pet_name || 'N/A'}</span>
-                                            <StatusBadge status={appt.status} size="sm" />
-                                            <ReasonBadge reasonType={appt.reason_type} />
-                                        </div>
-                                        <p className="text-xs text-gray-500">👤 {appt.owner_name || 'No disponible'}</p>
-                                        <p className="text-xs text-gray-500">📅 {formatDate(appt.appointment_date)} · 🕐 {appt.start_time}</p>
-                                        {appt.reason && <p className="text-xs text-gray-400 italic mt-1">&ldquo;{appt.reason}&rdquo;</p>}
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <Link
-                                            href={`/appointments/${appt.id}`}
-                                            className="text-xs font-semibold text-petwell-blue hover:underline"
-                                        >
-                                            Ver detalle
-                                        </Link>
-                                        {/* EHR shortcut */}
-                                        {(appt.status === 'CONFIRMED' || appt.status === 'PENDING') && appt.pet_id && (
-                                            user?.role === 'VETERINARIO' && appt.reason_type === 'VACUNACION' ? (
-                                                <Link
-                                                    href={`/pets/${appt.pet_id}/vaccinations`}
-                                                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-2 py-1 rounded inline-flex"
-                                                >
-                                                    💉 Registrar vacuna
-                                                </Link>
-                                            ) : (user?.role === 'VETERINARIO' && (
-                                                <Link
-                                                    href={`/pets/${appt.pet_id}/ehr/add`}
-                                                    className="text-xs font-semibold text-petwell-teal hover:text-petwell-navy transition-colors bg-petwell-teal/10 px-2 py-1 rounded inline-flex"
-                                                >
-                                                    🩺 Registrar consulta
-                                                </Link>
-                                            ))
-                                        )}
-                                        {(appt.status === 'CONFIRMED' || appt.status === 'PENDING') && (
-                                            <>
-                                                <button
-                                                    onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
-                                                    className="text-xs font-semibold text-green-600 hover:underline"
-                                                >
-                                                    ✅ Completada
-                                                </button>
-                                                <button
-                                                    onClick={() => handleStatusChange(appt.id, 'NO_SHOW')}
-                                                    className="text-xs font-semibold text-orange-500 hover:underline"
-                                                >
-                                                    ⚠️ No asistió
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                {filtered.sort((a, b) => `${a.appointment_date}${a.start_time}` > `${b.appointment_date}${b.start_time}` ? 1 : -1).map((appt) => {
+                                const rawType = (appt as any).type || (appt as any).mode || (appt as any).category || '';
+                                const isTelemedicina = rawType.toUpperCase().includes('TELE') || rawType.toUpperCase().includes('VIRTUAL');
+
+                                // Nueva lgica de EHR compartida
+                                const validEHRStatuses = ['CONFIRMED', 'IN_PROGRESS'];
+                                const canRegisterEhr = isVet && appt.pet_id && validEHRStatuses.includes(appt.status as string);
+
+                                // 🐛 Debug temporal
+                                console.log('👨‍⚕️ Vet appointment:', appt, 'isTelemedicina:', isTelemedicina, 'canEHR:', canRegisterEhr);
+
+                                    return (
+                                        <AppointmentCard
+                                            key={appt.id}
+                                            appointment={appt as any}
+                                            onStatusChange={handleStatusChange}
+                                        />
+                                    );
+                            })}
                         </div>
                     )}
                 </div>

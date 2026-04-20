@@ -9,7 +9,7 @@ import type {
 } from '@/types';
 import { getToken } from '@/utils/auth';
 
-// ─── URL base del API Gateway ─────────────────────────────────────────────────
+// BASE_URL ya incluye /api/v1 (definido en .env.local)
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ─── Helper fetch ─────────────────────────────────────────────────────────────
@@ -18,7 +18,11 @@ async function request<T>(
     options: RequestInit = {},
     token?: string
 ): Promise<T> {
-    const url = `${BASE_URL}${endpoint}`;
+    const cleanEndpoint = endpoint.replace(/^\/+/, '');
+    const url = `${BASE_URL}/${cleanEndpoint}`;
+
+    console.log('🌐 Request URL:', url);
+
     const config: RequestInit = {
         ...options,
         headers: {
@@ -32,7 +36,7 @@ async function request<T>(
     let data;
     try {
         data = await response.json();
-    } catch (e) {
+    } catch {
         throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
     }
     if (!response.ok) {
@@ -42,32 +46,30 @@ async function request<T>(
 }
 
 // ─── Normalizar respuesta de staff ─────────────────────────────────────────────
-// Soporta: array plano, { data: [] }, { data: { data: [] } }, { staff: [] }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function extractStaffArray(res: any): StaffMember[] {
     if (Array.isArray(res)) return res;
     if (Array.isArray(res?.data)) return res.data;
     if (Array.isArray(res?.data?.data)) return res.data.data;
     if (Array.isArray(res?.staff)) return res.staff;
-    if (Array.isArray(res?.data?.staff)) return res.data.staff; // { success, data: { staff: [] } }
+    if (Array.isArray(res?.data?.staff)) return res.data.staff;
     return [];
 }
 
 // ─── Registro de Clínica Veterinaria ─────────────────────────────────────────
-// POST /api/v1/clinics/register
 export async function registerClinic(payload: ClinicRegisterRequest): Promise<ClinicResponse> {
-    return request<ClinicResponse>('/api/v1/clinics/register', {
+    return request<ClinicResponse>('clinics/register', {
         method: 'POST',
         body: JSON.stringify(payload),
     });
 }
 
 // ─── Obtener listado de clínicas (requiere JWT) ────────────────────────────────
-// GET /api/v1/clinics
-// Normaliza: { data: { clinics: [] } } | { data: [] } | array plano
 export async function getClinics(tokenArg?: string): Promise<Clinic[]> {
     const jwt = tokenArg ?? getToken();
-    const url = `${BASE_URL}/api/v1/clinics`;
+    const url = `${BASE_URL}/clinics`;
+    console.log('🌐 Request URL:', url);
+
     const res = await fetch(url, {
         headers: {
             'Content-Type': 'application/json',
@@ -80,14 +82,13 @@ export async function getClinics(tokenArg?: string): Promise<Clinic[]> {
     if (Array.isArray(data)) {
         raw = data;
     } else if (Array.isArray(data?.data?.clinics)) {
-        raw = data.data.clinics;          // { data: { clinics: [] } }  ← backend actual
+        raw = data.data.clinics;
     } else if (Array.isArray(data?.data)) {
-        raw = data.data;                   // { data: [] }
+        raw = data.data;
     } else if (Array.isArray(data?.clinics)) {
         raw = data.clinics;
     }
 
-    // Normalizar: algunos backends devuelven 'name', otros 'clinic_name'
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return raw.map((c: any) => ({
         ...c,
@@ -95,41 +96,31 @@ export async function getClinics(tokenArg?: string): Promise<Clinic[]> {
     })) as Clinic[];
 }
 
-// ─── Agregar Veterinario (requiere token de clínica) ─────────────────────────
-// POST /api/v1/users/veterinarians
+// ─── Agregar Veterinario ─────────────────────────────────────────────────────
 export async function addVeterinarian(
     payload: VeterinarianRequest,
     token: string
 ): Promise<BaseResponse> {
     return request<BaseResponse>(
-        '/api/v1/users/veterinarians',
-        {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        },
+        'users/veterinarians',
+        { method: 'POST', body: JSON.stringify(payload) },
         token
     );
 }
 
 // ─── Obtener detalle de una clínica ──────────────────────────────────────────
-// GET /api/v1/clinics/:id
 export async function getClinic(id: string, token?: string): Promise<ClinicDetailResponse> {
-    return request<ClinicDetailResponse>(`/api/v1/clinics/${id}`, { method: 'GET' }, token);
+    return request<ClinicDetailResponse>(`clinics/${id}`, { method: 'GET' }, token);
 }
 
 // ─── Obtener personal de una clínica ─────────────────────────────────────────
-// GET /api/v1/clinics/:id/staff  →  devuelve StaffMember[] ya normalizado
 export async function getClinicStaff(id: string, token?: string): Promise<StaffMember[]> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await request<any>(`/api/v1/clinics/${id}/staff`, { method: 'GET' }, token);
-
-    const staffArray = extractStaffArray(res);
-
-    return staffArray;
+    const res = await request<any>(`clinics/${id}/staff`, { method: 'GET' }, token);
+    return extractStaffArray(res);
 }
 
 // ─── Actualizar datos de una clínica ─────────────────────────────────────────
-// PUT /api/v1/clinics/:id
 export interface UpdateClinicPayload {
     clinic_name?: string;
     address?: string;
@@ -146,17 +137,13 @@ export async function updateClinic(
     token: string
 ): Promise<ClinicDetailResponse> {
     return request<ClinicDetailResponse>(
-        `/api/v1/clinics/${id}`,
-        {
-            method: 'PUT',
-            body: JSON.stringify(payload),
-        },
+        `clinics/${id}`,
+        { method: 'PUT', body: JSON.stringify(payload) },
         token
     );
 }
 
 // ─── Subir logo de clínica ───────────────────────────────────────────────────
-// POST /api/v1/clinics/:id/logo
 export async function uploadClinicLogo(
     id: string,
     token: string,
@@ -165,19 +152,19 @@ export async function uploadClinicLogo(
     const formData = new FormData();
     formData.append('logo', file);
 
-    const url = `${BASE_URL}/api/v1/clinics/${id}/logo`;
+    const url = `${BASE_URL}/clinics/${id}/logo`;
+    console.log('🌐 Request URL:', url);
+
     const response = await fetch(url, {
         method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
     });
-    
+
     let data;
     try {
         data = await response.json();
-    } catch (e) {
+    } catch {
         throw new Error(`Respuesta no válida del servidor (no es JSON). Estado HTTP: ${response.status}`);
     }
     if (!response.ok) {
