@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { verifyAccount, resendVerificationCode } from '@/services/authService';
@@ -10,7 +10,7 @@ import Alert from '@/components/ui/Alert';
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN = 30;
 
-export default function VerifyAccountPage() {
+function VerifyAccountContent() {
     const router = useRouter();
     const { login } = useAuthContext();
     const searchParams = useSearchParams();
@@ -310,5 +310,17 @@ export default function VerifyAccountPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function VerifyAccountPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FFF7F0] via-white to-[#FFF3E6]">
+                <div className="w-10 h-10 rounded-full border-4 border-[#F86F03] border-t-transparent animate-spin" />
+            </div>
+        }>
+            <VerifyAccountContent />
+        </Suspense>
     );
 }
