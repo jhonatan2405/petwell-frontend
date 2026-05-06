@@ -9,7 +9,7 @@ import StatusBadge from './StatusBadge';
 import { Avatar } from '@/components/ui/Avatar';
 import { getSessionByAppointmentId, generateToken, startSession } from '@/services/telemedService';
 import { useAuthContext } from '@/context/AuthContext';
-import { getInvoices, initPayment } from '@/services/billingService';
+import { getInvoices, initPayment, confirmPayment } from '@/services/billingService';
 import type { Invoice } from '@/types';
 
 interface AppointmentCardProps {
@@ -344,9 +344,23 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
             window.open(redirect_url, '_blank', 'noopener,noreferrer');
         } catch (error) {
             console.error('Error initiating dynamic payment:', error);
-            // Fallback for extreme cases
             const boldUrl = process.env.NEXT_PUBLIC_BOLD_CHECKOUT_URL ?? '#';
             window.open(boldUrl, '_blank', 'noopener,noreferrer');
+        } finally {
+            setPaymentLoading(false);
+        }
+    };
+
+    const handleVerifyPayment = async () => {
+        if (!pendingInvoice || !pendingInvoice.reference) return;
+        setPaymentLoading(true);
+        try {
+            await confirmPayment(pendingInvoice.id, pendingInvoice.reference);
+            // Simular recarga para obtener el estado fresco
+            window.location.reload();
+        } catch (error) {
+            console.error('Error verificando pago:', error);
+            alert('Hubo un error verificando el pago. Intenta de nuevo.');
         } finally {
             setPaymentLoading(false);
         }
@@ -658,7 +672,15 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
                                     )}
                                 </button>
 
-                                <button disabled={paymentLoading} onClick={() => setShowPayModal(false)} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1 disabled:opacity-50">Cancelar</button>
+                                <button
+                                    onClick={handleVerifyPayment}
+                                    disabled={paymentLoading}
+                                    className="w-full py-3 rounded-xl font-extrabold text-sm bg-green-500 hover:bg-green-600 text-white shadow-md active:scale-95 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+                                >
+                                    ✅ Ya pagué, confirmar cita
+                                </button>
+
+                                <button disabled={paymentLoading} onClick={() => setShowPayModal(false)} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1 disabled:opacity-50 mt-2">Cancelar</button>
                             </div>
                         </div>
                     )}
