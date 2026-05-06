@@ -400,17 +400,30 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
     // Universal countdown
     let countdownText = '';
     let countdownColor = 'text-gray-500';
+    // isPast = appointment time passed more than 3 hours ago (not currently in session)
+    const diffMin = scheduledDateObj ? Math.floor((scheduledDateObj.getTime() - now.getTime()) / 60000) : 0;
+    const isPastAppointment = scheduledDateObj ? diffMin < -180 : false; // > 3 hours ago
     if (scheduledDateObj && appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED') {
-        const diffMin = Math.floor((scheduledDateObj.getTime() - now.getTime()) / 60000);
-        if (diffMin <= 0) {
-            countdownText = '🔴 En curso';
+        if (diffMin <= 0 && diffMin > -180) {
+            // Within 3 hours of scheduled time — truly "in progress" window
+            countdownText = '\uD83D\uDD34 En curso';
             countdownColor = 'text-red-600 font-bold';
+        } else if (diffMin < -180) {
+            // Past by more than 3 hours
+            const pastH = Math.abs(Math.floor(diffMin / 60));
+            if (pastH < 24) {
+                countdownText = `\u23F0 Hace ${pastH}h`;
+                countdownColor = 'text-gray-500';
+            } else {
+                countdownText = `\uD83D\uDCC5 Hace ${Math.floor(pastH / 24)} d\u00EDas`;
+                countdownColor = 'text-gray-500';
+            }
         } else if (diffMin <= 60) {
-            countdownText = `⏳ Inicia en ${diffMin} min`;
+            countdownText = `\u23F3 Inicia en ${diffMin} min`;
             countdownColor = 'text-amber-600 font-bold';
         } else {
             const h = Math.floor(diffMin / 60);
-            countdownText = h < 24 ? `⏳ Faltan ${h} h` : `📅 Faltan ${Math.floor(h / 24)} días`;
+            countdownText = h < 24 ? `\u23F3 Faltan ${h} h` : `\uD83D\uDCC5 Faltan ${Math.floor(h / 24)} d\u00EDas`;
         }
     }
 
@@ -719,7 +732,8 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
             )}
 
             {/* ── Action: Telemed specific button ─────────────────────────── */}
-            {isTelemedicina && scheduledDateObj && appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && telemedSession?.status !== 'COMPLETED' && telemedSession?.status !== 'CANCELLED' && (
+            {/* Hide for appointments that passed more than 3h ago, UNLESS session is actively IN_PROGRESS */}
+            {isTelemedicina && scheduledDateObj && !appointment.status.match(/COMPLETED|CANCELLED/) && !telemedSession?.status?.match(/COMPLETED|CANCELLED/) && (!isPastAppointment || telemedSession?.status === 'IN_PROGRESS') && (
                 <TelemedButton
                     appointmentId={appointment.id}
                     scheduledAt={scheduledDateObj.toISOString()}
