@@ -368,9 +368,6 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
         ? new Date(`${appointment.appointment_date}T${safeTime}:00`)
         : null;
     
-    // An appointment is in the past if its start time has already passed
-    const isPastAppointment = scheduledDateObj ? scheduledDateObj.getTime() < now.getTime() : false;
-
 
     // Robust type detection
     const rawType = appointment.type || '';
@@ -739,7 +736,7 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
 
             {/* ── Action: Telemed specific button ─────────────────────────── */}
             {/* Hide for appointments that passed more than 3h ago, UNLESS session is actively IN_PROGRESS */}
-            {isTelemedicina && scheduledDateObj && !appointment.status.match(/COMPLETED|CANCELLED/) && !telemedSession?.status?.match(/COMPLETED|CANCELLED/) && (!isPastAppointment || telemedSession?.status === 'IN_PROGRESS') && (
+            {isTelemedicina && scheduledDateObj && appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && telemedSession?.status !== 'COMPLETED' && telemedSession?.status !== 'CANCELLED' && (!isPastAppointment || telemedSession?.status === 'IN_PROGRESS') && (
                 <TelemedButton
                     appointmentId={appointment.id}
                     scheduledAt={scheduledDateObj.toISOString()}
