@@ -391,8 +391,13 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
             .finally(() => setSessionLoading(false));
     }, [appointment.id, isTelemedicina]);
 
-    const validEHRStatuses = ['CONFIRMED', 'IN_PROGRESS'];
-    const canRegisterEhr = isVet && appointment.pet_id && validEHRStatuses.includes(appointment.status);
+    const validEHRStatuses = ['CONFIRMED', 'COMPLETED'];
+    // Vet can register EHR when: appointment is CONFIRMED or COMPLETED,
+    // OR when the telemed session is actively IN_PROGRESS
+    const canRegisterEhr = isVet && appointment.pet_id && (
+        validEHRStatuses.includes(appointment.status) ||
+        telemedSession?.status === 'IN_PROGRESS'
+    );
 
     const canCancel = showCancelButton && onCancel &&
         (appointment.status === 'PENDING' || appointment.status === 'PENDING_PAYMENT' || appointment.status === 'CONFIRMED');
@@ -406,26 +411,27 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
     if (scheduledDateObj && appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED') {
         if (diffMin <= 0 && diffMin > -180) {
             // Within 3 hours of scheduled time — truly "in progress" window
-            countdownText = '\uD83D\uDD34 En curso';
+            countdownText = '🔴 En curso';
             countdownColor = 'text-red-600 font-bold';
         } else if (diffMin < -180) {
             // Past by more than 3 hours
             const pastH = Math.abs(Math.floor(diffMin / 60));
             if (pastH < 24) {
-                countdownText = `\u23F0 Hace ${pastH}h`;
+                countdownText = `⏰ Hace ${pastH}h`;
                 countdownColor = 'text-gray-500';
             } else {
-                countdownText = `\uD83D\uDCC5 Hace ${Math.floor(pastH / 24)} d\u00EDas`;
+                countdownText = `📅 Hace ${Math.floor(pastH / 24)} días`;
                 countdownColor = 'text-gray-500';
             }
         } else if (diffMin <= 60) {
-            countdownText = `\u23F3 Inicia en ${diffMin} min`;
+            countdownText = `⏳ Inicia en ${diffMin} min`;
             countdownColor = 'text-amber-600 font-bold';
         } else {
             const h = Math.floor(diffMin / 60);
-            countdownText = h < 24 ? `\u23F3 Faltan ${h} h` : `\uD83D\uDCC5 Faltan ${Math.floor(h / 24)} d\u00EDas`;
+            countdownText = h < 24 ? `⏳ Faltan ${h} h` : `📅 Faltan ${Math.floor(h / 24)} días`;
         }
     }
+
 
     // ─── Unified Look Configurations ──────────────────────────────────────────
     const getTypeConfig = () => {
