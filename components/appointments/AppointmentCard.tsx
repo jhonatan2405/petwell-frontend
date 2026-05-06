@@ -319,12 +319,24 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
     const isPendingPayment = appointment.status === 'PENDING_PAYMENT';
     const isDueno = user?.role === 'DUENO_MASCOTA';
 
+    // Fetch pending invoice — first try from all invoices, fallback by appointment_id
     useEffect(() => {
         if (!isPendingPayment || !isDueno) return;
         getInvoices()
             .then(invoices => {
                 const inv = invoices.find(i => i.appointment_id === appointment.id && i.status !== 'CANCELLED');
-                if (inv) setPendingInvoice(inv);
+                if (inv) {
+                    setPendingInvoice(inv);
+                } else {
+                    // Fallback: the invoice might not be on the list yet (async creation). Retry in 3s.
+                    const timer = setTimeout(() => {
+                        getInvoices().then(retried => {
+                            const found = retried.find(i => i.appointment_id === appointment.id && i.status !== 'CANCELLED');
+                            if (found) setPendingInvoice(found);
+                        }).catch(() => {});
+                    }, 3000);
+                    return () => clearTimeout(timer);
+                }
             })
             .catch(() => {});
     }, [appointment.id, isPendingPayment, isDueno]);
@@ -346,21 +358,6 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
             console.error('Error initiating dynamic payment:', error);
             const boldUrl = process.env.NEXT_PUBLIC_BOLD_CHECKOUT_URL ?? '#';
             window.open(boldUrl, '_blank', 'noopener,noreferrer');
-        } finally {
-            setPaymentLoading(false);
-        }
-    };
-
-    const handleVerifyPayment = async () => {
-        if (!pendingInvoice || !pendingInvoice.reference) return;
-        setPaymentLoading(true);
-        try {
-            await confirmPayment(pendingInvoice.id, pendingInvoice.reference);
-            // Simular recarga para obtener el estado fresco
-            window.location.reload();
-        } catch (error) {
-            console.error('Error verificando pago:', error);
-            alert('Hubo un error verificando el pago. Intenta de nuevo.');
         } finally {
             setPaymentLoading(false);
         }
@@ -670,14 +667,6 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
                                     ) : (
                                         'Ir a pagar →'
                                     )}
-                                </button>
-
-                                <button
-                                    onClick={handleVerifyPayment}
-                                    disabled={paymentLoading}
-                                    className="w-full py-3 rounded-xl font-extrabold text-sm bg-green-500 hover:bg-green-600 text-white shadow-md active:scale-95 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
-                                >
-                                    ✅ Ya pagué, confirmar cita
                                 </button>
 
                                 <button disabled={paymentLoading} onClick={() => setShowPayModal(false)} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1 disabled:opacity-50 mt-2">Cancelar</button>
