@@ -314,6 +314,8 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
     const [pendingInvoice, setPendingInvoice] = useState<Invoice | null>(null);
     const [showPayModal, setShowPayModal] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [paymentLoading, setPaymentLoading] = useState(false);
+    
     const isPendingPayment = appointment.status === 'PENDING_PAYMENT';
     const isDueno = user?.role === 'DUENO_MASCOTA';
 
@@ -334,12 +336,29 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleGoToBold = () => {
+    const handleGoToBold = async () => {
         if (!pendingInvoice) return;
-        // BOLD_CHECKOUT_URL should be the link configured in Bold dashboard
-        const boldUrl = process.env.NEXT_PUBLIC_BOLD_CHECKOUT_URL ?? '#';
-        window.open(boldUrl, '_blank', 'noopener,noreferrer');
+        setPaymentLoading(true);
+        try {
+            const { redirect_url } = await initPayment(pendingInvoice.id);
+            window.open(redirect_url, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            console.error('Error initiating dynamic payment:', error);
+            // Fallback for extreme cases
+            const boldUrl = process.env.NEXT_PUBLIC_BOLD_CHECKOUT_URL ?? '#';
+            window.open(boldUrl, '_blank', 'noopener,noreferrer');
+        } finally {
+            setPaymentLoading(false);
+        }
     };
+
+    const safeTime = appointment.start_time?.slice(0, 5) || '00:00';
+    const scheduledDateObj = appointment.appointment_date
+        ? new Date(`${appointment.appointment_date}T${safeTime}:00`)
+        : null;
+    
+    // An appointment is in the past if its start time has already passed
+    const isPastAppointment = scheduledDateObj ? scheduledDateObj.getTime() < now.getTime() : false;
 
 
     // Robust type detection
@@ -366,11 +385,6 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
 
     const canCancel = showCancelButton && onCancel &&
         (appointment.status === 'PENDING' || appointment.status === 'PENDING_PAYMENT' || appointment.status === 'CONFIRMED');
-
-    const safeTime = appointment.start_time?.slice(0, 5) || '00:00';
-    const scheduledDateObj = appointment.appointment_date
-        ? new Date(`${appointment.appointment_date}T${safeTime}:00`)
-        : null;
 
     // Universal countdown
     let countdownText = '';
@@ -584,18 +598,28 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
                             </p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                            <button
-                                onClick={() => setShowPayModal(true)}
-                                disabled={!pendingInvoice}
-                                className="px-4 py-2 rounded-xl font-bold text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                💳 Pagar ahora
-                            </button>
+                            {isPastAppointment ? (
+                                <button
+                                    disabled
+                                    className="px-4 py-2 rounded-xl font-bold text-sm bg-gray-200 text-gray-500 shadow-sm cursor-not-allowed"
+                                    title="La fecha de la cita ya pasó"
+                                >
+                                    🚫 Cita expirada
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setShowPayModal(true)}
+                                    disabled={!pendingInvoice}
+                                    className="px-4 py-2 rounded-xl font-bold text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    💳 Pagar ahora
+                                </button>
+                            )}
                         </div>
                     </div>
 
                     {/* ── Pay Modal ───────────────────────────────────────── */}
-                    {showPayModal && pendingInvoice && (
+                    {showPayModal && pendingInvoice && !isPastAppointment && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowPayModal(false)}>
                             <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
                                 <div className="text-center space-y-1">
@@ -621,12 +645,20 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
 
                                 <button
                                     onClick={handleGoToBold}
-                                    className="w-full py-3 rounded-xl font-extrabold text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md hover:scale-105 active:scale-95 transition-all"
+                                    disabled={paymentLoading}
+                                    className="w-full py-3 rounded-xl font-extrabold text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
                                 >
-                                    Ir a pagar →
+                                    {paymentLoading ? (
+                                        <>
+                                            <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                                            Generando enlace...
+                                        </>
+                                    ) : (
+                                        'Ir a pagar →'
+                                    )}
                                 </button>
 
-                                <button onClick={() => setShowPayModal(false)} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1">Cancelar</button>
+                                <button disabled={paymentLoading} onClick={() => setShowPayModal(false)} className="w-full text-xs text-gray-400 hover:text-gray-600 py-1 disabled:opacity-50">Cancelar</button>
                             </div>
                         </div>
                     )}
