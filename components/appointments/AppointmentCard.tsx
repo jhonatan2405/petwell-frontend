@@ -741,8 +741,10 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
                         Ver detalle
                     </Link>
                     
-                    {/* Botones de cambio de estado (para el Vet) */}
-                    {onStatusChange && (appointment.status === 'CONFIRMED' || appointment.status === 'PENDING') && (
+                    {/* Botones de cambio de estado (para el Vet)
+                         Ocultar cuando la sesión telemed está activa (IN_PROGRESS)
+                         — no tiene sentido marcar como No asistió durante la videollamada */}
+                    {onStatusChange && (appointment.status === 'CONFIRMED' || appointment.status === 'PENDING') && telemedSession?.status !== 'IN_PROGRESS' && (
                         <>
                             <button
                                 onClick={() => onStatusChange(appointment.id, 'COMPLETED')}
@@ -751,13 +753,16 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
                             >
                                 ✅ Completar
                             </button>
-                            <button
-                                onClick={() => onStatusChange(appointment.id, 'NO_SHOW')}
-                                className="flex-1 text-center text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors py-2 rounded-lg bg-orange-50 hover:bg-orange-100 border border-orange-200"
-                                title="Paciente no asistió"
-                            >
-                                ⚠️ No asistió
-                            </button>
+                            {/* Only show No asistió for non-telemed appointments */}
+                            {!isTelemedicina && (
+                                <button
+                                    onClick={() => onStatusChange(appointment.id, 'NO_SHOW')}
+                                    className="flex-1 text-center text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors py-2 rounded-lg bg-orange-50 hover:bg-orange-100 border border-orange-200"
+                                    title="Paciente no asistió"
+                                >
+                                    ⚠️ No asistió
+                                </button>
+                            )}
                         </>
                     )}
 
