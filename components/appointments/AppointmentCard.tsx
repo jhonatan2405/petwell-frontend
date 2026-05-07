@@ -278,8 +278,8 @@ function TelemedButton({
                     {cfg.label}
                 </button>
                 {/* Botón Finalizar: visible para VET mientras session sea IN_PROGRESS,
-                    independientemente de btnState (no bloquear por 'done') */}
-                {isVet && session?.status === 'IN_PROGRESS' && !isFinished && (
+                    independientemente de btnState o de si la cita principal fue marcada como completada/cancelada */}
+                {isVet && session?.status === 'IN_PROGRESS' && (
                     <button
                         onClick={handleEndSession}
                         disabled={btnState === 'loading'}
@@ -737,16 +737,8 @@ export default function AppointmentCard({ appointment, onCancel, showCancelButto
             )}
 
             {/* ── Action: Telemed specific button ─────────────────────────── */}
-            {/* Regla: mostrar si la sesión está IN_PROGRESS (sin importar estado de cita),
-                O si la cita es telemedicina, no está COMPLETADA/CANCELADA, y la sesión no finalizó */}
-            {isTelemedicina && scheduledDateObj &&
-                telemedSession?.status !== 'COMPLETED' && telemedSession?.status !== 'CANCELLED' &&
-                (
-                    // Siempre mostrar si la sesión está activa (aunque la cita esté "Cancelada")
-                    telemedSession?.status === 'IN_PROGRESS' ||
-                    // Mostrar si la cita está en un estado abierto y no pasó hace +3h
-                    (appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && !isPastAppointment)
-                ) && (
+            {/* Hide for appointments that passed more than 3h ago, UNLESS session is actively IN_PROGRESS */}
+            {isTelemedicina && scheduledDateObj && appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && telemedSession?.status !== 'COMPLETED' && telemedSession?.status !== 'CANCELLED' && (!isPastAppointment || telemedSession?.status === 'IN_PROGRESS') && (
                 <TelemedButton
                     appointmentId={appointment.id}
                     scheduledAt={scheduledDateObj.toISOString()}
