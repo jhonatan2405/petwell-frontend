@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
 import './auth.css';
 
-export default function AuthPage() {
-    const [isSignUpMode, setIsSignUpMode] = useState(false);
+function AuthContent() {
+    const searchParams = useSearchParams();
+    const [isSignUpMode, setIsSignUpMode] = useState(searchParams.get('mode') === 'register');
 
     return (
         <div className="min-h-[calc(100dvh-64px)] w-full bg-[#f8faff] md:bg-transparent animate-page-enter relative overflow-hidden flex flex-col justify-center">
@@ -86,3 +88,12 @@ export default function AuthPage() {
         </div>
     );
 }
+
+export default function AuthPage() {
+    return (
+        <Suspense fallback={null}>
+            <AuthContent />
+        </Suspense>
+    );
+}
+
