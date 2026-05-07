@@ -277,7 +277,9 @@ function TelemedButton({
                 >
                     {cfg.label}
                 </button>
-                {isVet && session?.status === 'IN_PROGRESS' && (
+                {/* Botón Finalizar: visible para VET mientras session sea IN_PROGRESS,
+                    independientemente de btnState (no bloquear por 'done') */}
+                {isVet && session?.status === 'IN_PROGRESS' && !isFinished && (
                     <button
                         onClick={handleEndSession}
                         disabled={btnState === 'loading'}

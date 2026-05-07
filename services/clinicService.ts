@@ -172,3 +172,26 @@ export async function uploadClinicLogo(
     }
     return data as ClinicDetailResponse;
 }
+// ─── Revocar acceso de un miembro del staff ────────────────────────────────────
+export async function revokeStaffMember(
+    staffUserId: string,
+    token: string
+): Promise<BaseResponse> {
+    return request<BaseResponse>(
+        `users/${staffUserId}/revoke`,
+        { method: 'PATCH' },
+        token
+    );
+}
+
+// ─── Reactivar acceso de un miembro del staff ─────────────────────────────────
+export async function reactivateStaffMember(
+    staffUserId: string,
+    token: string
+): Promise<BaseResponse> {
+    return request<BaseResponse>(
+        `users/${staffUserId}/reactivate`,
+        { method: 'PATCH' },
+        token
+    );
+}

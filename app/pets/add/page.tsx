@@ -64,8 +64,20 @@ export default function AddPetPage() {
 
     const validate = (): boolean => {
         const e: Record<string, string> = {};
-        if (!name.trim()) e.name = 'El nombre es obligatorio.';
+        if (!name.trim()) {
+            e.name = 'El nombre es obligatorio.';
+        } else if (/^\d+$/.test(name.trim())) {
+            e.name = 'El nombre no puede ser solo números.';
+        } else if (!/[a-zA-Zà-ž]/.test(name)) {
+            e.name = 'El nombre debe contener al menos una letra.';
+        }
         if (!species.trim()) e.species = 'La especie es obligatoria.';
+        if (birthDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const bDate = new Date(birthDate + 'T00:00:00');
+            if (bDate > today) e.birthDate = 'La fecha de nacimiento no puede ser futura.';
+        }
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -160,7 +172,9 @@ export default function AddPetPage() {
                                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>}
                             />
                             <Input id="pet-birthdate" label="Fecha de nacimiento" type="date" value={birthDate}
-                                onChange={e => setBirthDate(e.target.value)}
+                                onChange={e => { setBirthDate(e.target.value); setErrors(p => ({ ...p, birthDate: '' })); }}
+                                error={errors.birthDate}
+                                max={new Date().toISOString().split('T')[0]}
                                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                             />
                         </div>

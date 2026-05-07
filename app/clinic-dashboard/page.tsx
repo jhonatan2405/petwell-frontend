@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { removeToken, getToken } from '@/utils/auth';
-import { getClinicStaff, getClinic } from '@/services/clinicService';
+import { getClinicStaff, getClinic, revokeStaffMember, reactivateStaffMember } from '@/services/clinicService';
 import { useAuthContext } from '@/context/AuthContext';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
@@ -86,6 +86,8 @@ export default function ClinicDashboardPage() {
     const [staffError, setStaffError] = useState<string | null>(null);
     const [clinic, setClinic] = useState<ClinicDetail | null>(null);
     const [clinicError, setClinicError] = useState<boolean>(false);
+    const [revokingId, setRevokingId] = useState<string | null>(null);
+    const [revokeMsg, setRevokeMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // ─── Normalización de rol ──────────────────────────────────────────
     const role = String(user?.role ?? '').trim().toUpperCase();
@@ -163,6 +165,29 @@ export default function ClinicDashboardPage() {
     const handleLogout = () => {
         removeToken();
         router.push('/login');
+    };
+
+    const handleToggleRevoke = async (member: StaffMember) => {
+        const jwt = token ?? getToken();
+        if (!jwt) return;
+        setRevokingId(member.id);
+        setRevokeMsg(null);
+        try {
+            if (member.is_active !== false) {
+                await revokeStaffMember(member.id, jwt);
+                setStaff(prev => prev.map(m => m.id === member.id ? { ...m, is_active: false } : m));
+                setRevokeMsg({ type: 'success', text: `Acceso de ${member.name} revocado.` });
+            } else {
+                await reactivateStaffMember(member.id, jwt);
+                setStaff(prev => prev.map(m => m.id === member.id ? { ...m, is_active: true } : m));
+                setRevokeMsg({ type: 'success', text: `${member.name} reactivado exitosamente.` });
+            }
+        } catch (err: any) {
+            setRevokeMsg({ type: 'error', text: err.message || 'Error al cambiar el estado del usuario.' });
+        } finally {
+            setRevokingId(null);
+            setTimeout(() => setRevokeMsg(null), 4000);
+        }
     };
 
     const handleAddVet = () => router.push('/clinic-dashboard/add-veterinarian');
@@ -320,6 +345,11 @@ export default function ClinicDashboardPage() {
                             Actualizar
                         </Button>
                     </div>
+                    {revokeMsg && (
+                        <div className="mb-3">
+                            <Alert type={revokeMsg.type} message={revokeMsg.text} onClose={() => setRevokeMsg(null)} />
+                        </div>
+                    )}
 
                     <div className="card-glass overflow-hidden">
                         {!user?.clinic_id && !staffLoading ? (
@@ -353,11 +383,13 @@ export default function ClinicDashboardPage() {
                                                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Rol</th>
                                                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Licencia</th>
                                                 <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Registro</th>
+                                                <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Estado</th>
+                                                <th className="px-6 py-3.5" />
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
                                             {staff.map((member) => (
-                                                <tr key={member.id} className="hover:bg-petwell-light/40 transition-colors duration-150">
+                                                <tr key={member.id} className={`hover:bg-petwell-light/40 transition-colors duration-150 ${member.is_active === false ? 'opacity-60' : ''}`}>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 gradient-petwell rounded-lg flex items-center justify-center flex-shrink-0">
@@ -384,10 +416,32 @@ export default function ClinicDashboardPage() {
                                                             <span className="text-gray-300 text-xs">—</span>
                                                         )}
                                                     </td>
-                                                <td className="px-6 py-4 text-gray-400 text-xs">
-                                                    {member.created_at ? formatDate(member.created_at) : '—'}
-                                                </td>
-                                            </tr>
+                                                    <td className="px-6 py-4 text-gray-400 text-xs">
+                                                        {member.created_at ? formatDate(member.created_at) : '—'}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                                            member.is_active === false
+                                                                ? 'bg-red-50 text-red-600 border border-red-200'
+                                                                : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                                        }`}>
+                                                            {member.is_active === false ? '● Inactivo' : '● Activo'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <button
+                                                            onClick={() => handleToggleRevoke(member)}
+                                                            disabled={revokingId === member.id}
+                                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
+                                                                member.is_active === false
+                                                                    ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                                                                    : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                                                            }`}
+                                                        >
+                                                            {revokingId === member.id ? '⧗ ...' : (member.is_active === false ? '✓ Reactivar' : '× Revocar')}
+                                                        </button>
+                                                    </td>
+                                                </tr>
                                             ))}
                                         </tbody>
                                     </table>

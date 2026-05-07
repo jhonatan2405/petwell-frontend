@@ -36,7 +36,7 @@ export default function ChangePasswordPage() {
     useEffect(() => {
         const token = getToken();
         if (!token) {
-            router.push('/login');
+            router.push('/auth');
         }
     }, [router]);
 
@@ -53,8 +53,8 @@ export default function ChangePasswordPage() {
         }
         if (!fields.new_password.trim()) {
             newErrors.new_password = 'La nueva contraseña es obligatoria.';
-        } else if (fields.new_password.length < 6) {
-            newErrors.new_password = 'La nueva contraseña debe tener al menos 6 caracteres.';
+        } else if (fields.new_password.length < 8) {
+            newErrors.new_password = 'La nueva contraseña debe tener al menos 8 caracteres.';
         } else if (fields.new_password === fields.current_password) {
             newErrors.new_password = 'La nueva contraseña debe ser diferente a la actual.';
         }
@@ -94,7 +94,7 @@ export default function ChangePasswordPage() {
                 // Cerrar sesión tras cambio exitoso
                 setTimeout(() => {
                     removeToken();
-                    router.push('/login');
+                    router.push('/auth');
                 }, 2500);
             } else {
                 setForm({ loading: false, error: res.message || 'Error al cambiar la contraseña.', success: null });
@@ -164,7 +164,7 @@ export default function ChangePasswordPage() {
                             id="new-password"
                             label="Nueva contraseña"
                             type="password"
-                            placeholder="Mínimo 6 caracteres"
+                            placeholder="Mínimo 8 caracteres"
                             value={fields.new_password}
                             onChange={set('new_password')}
                             error={errors.new_password}
