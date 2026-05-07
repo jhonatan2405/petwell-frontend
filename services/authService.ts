@@ -1,7 +1,6 @@
 import type { RegisterRequest, LoginRequest, AuthResponse } from '@/types';
 
 // BASE_URL ya incluye /api/v1 (definido en .env.local)
-// NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 // ─── Helper fetch ─────────────────────────────────────────────────────────────
@@ -51,7 +50,7 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
     });
 }
 
-// ─── Verificación de cuenta (2FA) ─────────────────────────────────────────────
+// ─── Verificación de cuenta (OTP 6 dígitos) ───────────────────────────────────
 export async function verifyAccount(email: string, code: string): Promise<AuthResponse> {
     return request<AuthResponse>('auth/verify', {
         method: 'POST',
@@ -64,5 +63,21 @@ export async function resendVerificationCode(email: string): Promise<AuthRespons
     return request<AuthResponse>('auth/resend-code', {
         method: 'POST',
         body: JSON.stringify({ email }),
+    });
+}
+
+// ─── Olvidé mi contraseña ─────────────────────────────────────────────────────
+export async function forgotPassword(email: string): Promise<AuthResponse> {
+    return request<AuthResponse>('auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+    });
+}
+
+// ─── Restablecer contraseña con código ───────────────────────────────────────
+export async function resetPassword(email: string, code: string, new_password: string): Promise<AuthResponse> {
+    return request<AuthResponse>('auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ email, code, new_password }),
     });
 }

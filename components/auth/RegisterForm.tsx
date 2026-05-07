@@ -29,11 +29,13 @@ export default function RegisterForm() {
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+    const [emailDuplicate, setEmailDuplicate] = useState(false);
 
     const handleFieldChange = (key: keyof typeof fields) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFields(prev => ({ ...prev, [key]: e.target.value }));
         setFieldErrors(prev => ({ ...prev, [key]: undefined }));
         setServerError(null);
+        if (key === 'email') setEmailDuplicate(false);
     };
 
     const validateOwner = (): boolean => {
@@ -80,7 +82,14 @@ export default function RegisterForm() {
                     setSuccessMsg('¡Cuenta registrada! Redirigiendo a verificación...');
                     setTimeout(() => router.push(`/verify-account?email=${encodeURIComponent(fields.email.trim())}`), 1800);
                 } else setServerError(res.message || 'Error al registrar.');
-            } catch (err: any) { setServerError(err.message || 'Error de conexión.'); }
+            } catch (err: any) {
+                if ((err as any).status === 409) {
+                    setEmailDuplicate(true);
+                    setFieldErrors(prev => ({ ...prev, email: 'Este correo ya está registrado.' }));
+                } else {
+                    setServerError(err.message || 'Error de conexión.');
+                }
+            }
             finally { setLoading(false); }
             
         } else {
@@ -103,7 +112,14 @@ export default function RegisterForm() {
                     setSuccessMsg('¡Clínica registrada! Redirigiendo a verificación...');
                     setTimeout(() => router.push(`/verify-account?email=${encodeURIComponent(fields.email.trim())}`), 1800);
                 } else setServerError(res.message || 'Error al registrar.');
-            } catch (err: any) { setServerError(err.message || 'Error de conexión.'); }
+            } catch (err: any) {
+                if ((err as any).status === 409) {
+                    setEmailDuplicate(true);
+                    setFieldErrors(prev => ({ ...prev, email: 'Este correo ya está registrado.' }));
+                } else {
+                    setServerError(err.message || 'Error de conexión.');
+                }
+            }
             finally { setLoading(false); }
         }
     };
@@ -143,6 +159,22 @@ export default function RegisterForm() {
                 </div>
 
                 {serverError && <div className="w-full mb-4"><Alert type="error" message={serverError} onClose={() => setServerError(null)} /></div>}
+                {emailDuplicate && (
+                    <div className="w-full mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
+                        <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="text-sm">
+                            <p className="font-semibold text-amber-800">Este correo ya tiene una cuenta.</p>
+                            <p className="text-amber-700 mt-0.5">
+                                ¿Quieres{' '}
+                                <button type="button" onClick={() => router.push('/auth')} className="underline font-semibold hover:text-amber-900">iniciar sesión</button>
+                                {' '}o{' '}
+                                <button type="button" onClick={() => router.push(`/verify-account?email=${encodeURIComponent(fields.email.trim())}`)} className="underline font-semibold hover:text-amber-900">verificar tu cuenta</button>?
+                            </p>
+                        </div>
+                    </div>
+                )}
                 {successMsg && <div className="w-full mb-4"><Alert type="success" message={successMsg} /></div>}
 
                 <div className="w-full space-y-4">
